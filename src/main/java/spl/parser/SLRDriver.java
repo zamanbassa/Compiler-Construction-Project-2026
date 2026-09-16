@@ -4,9 +4,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
-import javax.swing.Action;
-
 import spl.lexer.Token;
+import spl.lexer.TokenType;
 import spl.tree.TreeNode;
 
 public class SLRDriver {
@@ -26,7 +25,7 @@ public class SLRDriver {
         int inputPosition = 0;
 
         while (true) {
-            // if index>actual length , error occurred
+            // if index>=actual length , error occurred
             if (inputPosition >= tokens.size()) {
                 throw new SyntaxError("Unexpected end of input");
             }
@@ -37,15 +36,15 @@ public class SLRDriver {
             // stack top-state
             int state = stack.peek().state;
 
-            Terminal terminal = tables.getTerminal(currToken);
-
+            Terminal terminal = getTerminal(currToken);
 
             // ACTION[state, terminal]
             Action action = tables.getAction(state, terminal);
 
             // if we couldn't find an entry for such in the table..
             if (action == null) {
-                throw new SyntaxError("Unexpected token '" + currToken.getLexeme() + "' at line " + currToken.getLine());
+                throw new SyntaxError(
+                        "Unexpected token '" + currToken.getLexeme() + "' at line " + currToken.getLine());
             }
 
             if (action.isShift()) {
@@ -100,6 +99,144 @@ public class SLRDriver {
                 throw new SyntaxError("Invalid parser action for token '" + currToken.getLexeme() + "' at line "
                         + currToken.getLine());
             }
+
+        }
+    }
+
+    // mappings
+
+    private Terminal getTerminal(Token token) {
+        switch (token.getType()) {
+            case IDENTIFIER:
+                return Terminal.USER_DEFINED_NAME;
+            case NUMBER:
+                return Terminal.NUM;
+            case STRING:
+                return Terminal.STRING;
+            case EOF:
+                return Terminal.EOF;
+            case KEYWORD:
+                return keyword(token.getLexeme());
+            case SYMBOL:
+                return symbol(token.getLexeme());
+
+            default:
+                throw new IllegalStateException("Unmapped token type: " + token.getType());
+        }
+    }
+
+    private Terminal keyword(String word) {
+        switch (word) {
+            case "void":
+
+                return Terminal.VOID;
+            case "num":
+
+                return Terminal.NUM_TYPE;
+            case "return":
+
+                return Terminal.RETURN;
+            case "print":
+
+                return Terminal.PRINT;
+            case "nop":
+
+                return Terminal.NOP;
+            case "comment":
+
+                return Terminal.COMMENT;
+            case "if":
+
+                return Terminal.IF;
+            case "then":
+
+                return Terminal.THEN;
+            case "else":
+
+                return Terminal.ELSE;
+            case "not":
+
+                return Terminal.NOT;
+            case "and":
+
+                return Terminal.AND;
+            case "or":
+
+                return Terminal.OR;
+            case "eq":
+
+                return Terminal.EQ;
+            case "larger":
+
+                return Terminal.LARGER;
+            case "lesser":
+
+                return Terminal.LESSER;
+            case "mod":
+
+                return Terminal.MOD;
+            case "add":
+
+                return Terminal.ADD;
+            case "sub":
+
+                return Terminal.SUB;
+            case "mul":
+
+                return Terminal.MUL;
+
+            case "div":
+
+                return Terminal.DIV;
+
+            case "neg":
+
+                return Terminal.NEG;
+
+            case "do":
+
+                return Terminal.DO;
+
+            case "while":
+
+                return Terminal.WHILE;
+
+            case "until":
+
+                return Terminal.UNTIL;
+
+            default:
+                throw new IllegalStateException("Unknown keyword: " + word);
+        }
+    }
+
+    private Terminal symbol(String sy) {
+        switch (sy) {
+            case "(":
+
+                return Terminal.LPAREN;
+
+            case ")":
+
+                return Terminal.RPAREN;
+            case "{":
+
+                return Terminal.LBRACE;
+            case "}":
+
+                return Terminal.RBRACE;
+            case ";":
+
+                return Terminal.SEMICOLON;
+            case "=":
+
+                return Terminal.ASSIGN_OP;
+            case ":":
+
+                return Terminal.COLON;
+
+            default:
+                throw new IllegalStateException("Unknown symbol: " + sy);
         }
     }
 }

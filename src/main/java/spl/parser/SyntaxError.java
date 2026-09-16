@@ -1,6 +1,8 @@
- package spl.parser;
+package spl.parser;
 
-public class SyntaxError {
+public class SyntaxError extends Exception {
 
-    
+    public SyntaxError(String message) {
+        super(message);
+    }
 }
