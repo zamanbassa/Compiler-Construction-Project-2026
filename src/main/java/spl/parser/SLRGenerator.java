@@ -20,7 +20,7 @@ public class SLRGenerator {
 
     public void calculateFollowSets(){
 
-        Set<NonTerminal> nullable = new EnumSet<>(NonTerminal.class);
+        Set<NonTerminal> nullable = EnumSet.noneOf(NonTerminal.class);
         Map<NonTerminal, Set<Terminal>> first = new EnumMap<>(NonTerminal.class);
 
         for (NonTerminal nt : NonTerminal.values()){
