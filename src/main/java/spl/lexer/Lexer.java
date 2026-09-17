@@ -7,13 +7,6 @@ import java.util.Map;
 import java.util.Objects;
 import spl.contract.ILexer;
 
-/**
- * Lexer for the 2026 SPL syntax specification.
- *
- * <p>The specification requires every token to be followed by a blank space.
- * This implementation accepts ASCII space, carriage return, and line feed as
- * blank separators. CRLF is treated as one newline.</p>
- */
 public final class Lexer implements ILexer {
     private static final Map<String, TokenType> KEYWORDS = createKeywords();
 
@@ -169,15 +162,16 @@ public final class Lexer implements ILexer {
                 line++;
                 column = 1;
             } else {
-                advanceWithoutNewlineAccounting();
+                // Ordinary spaces do not start a new line, but they still
+                // move the current column forward.
+                advance();
             }
         }
     }
 
     private void advance() {
         if (current() == '\r' || current() == '\n') {
-            // Newline accounting is handled by skipBlankSpaces. A token may
-            // never contain a newline, so this branch is defensive only.
+            // Newline accounting is handled by skipBlankSpaces. A token may never contain a newline
             index++;
             return;
         }
