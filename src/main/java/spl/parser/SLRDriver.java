@@ -27,7 +27,8 @@ public class SLRDriver {
         while (true) {
             // if index>=actual length , error occurred
             if (inputPosition >= tokens.size()) {
-                throw new SyntaxError("Unexpected end of input");
+                int state = stack.peek().state;
+                throw new SyntaxError("end of input", -1, tables.expectedTerminals(state));
             }
 
             // retrieve curr single token from input
@@ -44,7 +45,7 @@ public class SLRDriver {
             // if we couldn't find an entry for such in the table..
             if (action == null) {
                 throw new SyntaxError(
-                        "Unexpected token '" + currToken.getLexeme() + "' at line " + currToken.getLine());
+                        currToken.getLexeme(), currToken.getLine(), tables.expectedTerminals(state));
             }
 
             if (action.isShift()) {
