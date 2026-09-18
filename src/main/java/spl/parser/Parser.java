@@ -25,8 +25,4 @@ public class Parser implements IParser {
         return driver.parse(tokens);
     }
 
-    @Override
-    public void parse() {
-        throw new UnsupportedOperationException("Use parse(List<Token>) to parse the token input.");
-    }
 }
