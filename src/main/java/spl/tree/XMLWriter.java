@@ -24,6 +24,53 @@ public class XMLWriter {
         }
     }
 
-    private void writeNode(FileWriter writer, TreeNode node, int depth) throws IOException {}
-    
+    private void writeNode(FileWriter writer, TreeNode node, int depth) throws IOException {
+        String indent = INDENT.repeat(depth);
+
+        if (node.isTerminal()) {
+           
+            writer.write(indent + "<node>\n");
+            writer.write(indent + INDENT + "<id>" + node.getNodeId() + "</id>\n");
+            writer.write(indent + INDENT + "<contents>" + escapeXml(node.getValue()) + "</contents>\n");
+            if (node.getParent() != null) {
+                writer.write(indent + INDENT + "<parent>" + node.getParent().getNodeId() + "</parent>\n");
+            }
+            writer.write(indent + "</node>\n");
+        } else {
+            
+            writer.write(indent + "<node>\n");
+            writer.write(indent + INDENT + "<id>" + node.getNodeId() + "</id>\n");
+            writer.write(indent + INDENT + "<contents>" + escapeXml(node.getValue()) + "</contents>\n");
+            if (!node.getChildren().isEmpty()) {
+                writer.write(indent + INDENT + "<children>\n");
+                List<Integer> childrenIds = node.getChildrenIds();
+                for (Integer childId : childrenIds) {
+                    writer.write(indent + INDENT + INDENT + "<child>" + childId + "</child>\n");
+                }
+                writer.write(indent + INDENT + "</children>\n");
+            }
+
+            if (node.getParent() != null) {
+                writer.write(indent + INDENT + "<parent>" + node.getParent().getNodeId() + "</parent>\n");
+            }
+
+            writer.write(indent + "</node>\n");
+             for (TreeNode child : node.getChildren()) {
+                writeNode(writer, child, depth + 1);
+            }
+        }
+
+    }
+
+     private String escapeXml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&apos;");
+    }
+
 }
