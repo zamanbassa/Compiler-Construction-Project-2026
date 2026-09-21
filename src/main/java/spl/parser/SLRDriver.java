@@ -53,7 +53,7 @@ public class SLRDriver {
                 int nextState = action.getState();
 
                 // make a tree node
-                TreeNode tNode = new TreeNode(currToken.getLexeme());
+                TreeNode tNode = new TreeNode(currToken.getLexeme(), true);
 
                 // shift the the current input a well as the state to teh stack
                 stack.push(new StackEntry(nextState, terminal, tNode));

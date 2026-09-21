@@ -48,8 +48,8 @@ public final class ParserTest {
         List<Token> tokens = new Lexer().tokenize(source);
         TreeNode root = new Parser().parse(tokens);
         assert root != null : "parser returned a null tree";
-        assert "P".equals(root.getValue())
-                : "expected the current parser root to be P, got " + root.getValue();
+        assert "SPL_PROG".equals(root.getValue())
+                : "expected parser root to be SPL_PROG, got " + root.getValue();
     }
 
     private static void assertSyntaxError(String source) throws Exception {

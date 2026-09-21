@@ -7,9 +7,7 @@ import java.util.List;
 import spl.lexer.Lexer;
 import spl.lexer.LexicalException;
 import spl.lexer.Token;
-import spl.parser.SLRDriver;
-import spl.parser.SLRGenerator;
-import spl.parser.SLRTables;
+import spl.parser.Parser;
 import spl.parser.SyntaxError;
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
@@ -31,8 +29,7 @@ public class Main {
             }
             System.out.println();
             System.out.println("=== Syntax Analysis ===");
-            SLRTables tables = new SLRGenerator().generateSLRTables();
-            SLRDriver parser = new SLRDriver(tables);
+            Parser parser = new Parser();
             TreeNode parseTree = parser.parse(tokens);
             System.out.println("✓ Parsing successful. Parse tree generated.");
             System.out.println();
@@ -49,12 +46,15 @@ public class Main {
         } catch (LexicalException e) {
             System.err.println("✗ Lexical Error: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         } catch (SyntaxError e) {
             System.err.println("✗ Syntax Error: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         } catch (Exception e) {
             System.err.println("✗ Error: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         }
     }
 }
