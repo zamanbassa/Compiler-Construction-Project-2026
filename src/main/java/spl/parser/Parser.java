@@ -22,7 +22,10 @@ public class Parser implements IParser {
         if (tokens == null || tokens.isEmpty()){
             throw new SyntaxError("The Parser recieved no tokens");
         }
-        return driver.parse(tokens);
+        TreeNode program = driver.parse(tokens);
+        TreeNode root = new TreeNode("SPL_PROG");
+        root.addChild(program);
+        return root;
     }
 
 }
