@@ -29,11 +29,11 @@ public final class ParserTest {
     }
 
     private static void acceptsAssignmentProgram() throws Exception {
-        assertRoot(": : #x_ = 0 ; ");
+        assertRoot(": : #x = 0 ; ");
     }
 
     private static void acceptsVoidFunctionProgram() throws Exception {
-        assertRoot(": void #f_ ( ) { : : return } : ");
+        assertRoot(": void #f ( ) { : : return } : ");
     }
 
     private static void rejectsMissingDeclarationSeparator() throws Exception {
