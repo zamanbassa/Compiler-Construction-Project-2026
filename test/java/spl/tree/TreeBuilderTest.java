@@ -50,7 +50,7 @@ public final class TreeBuilderTest {
 
         TreeNode root = new TreeNode("SPL_PROG");
         TreeNode declarations = new TreeNode("V_DECL");
-        TreeNode variable = new TreeNode("#x_", true);
+        TreeNode variable = new TreeNode("#x", true);
         TreeNode algorithm = new TreeNode("ALGO");
         TreeNode instruction = new TreeNode("INSTR");
         TreeNode print = new TreeNode("print", true);
