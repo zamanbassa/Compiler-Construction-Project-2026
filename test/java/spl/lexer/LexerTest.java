@@ -19,13 +19,13 @@ public final class LexerTest {
     }
 
     private static void tokenizesKeywordsNamesNumbersStringsAndSymbols() {
-        String input = "num #main_ ( #x_ ) { print \"hello,world\" ; } 0 -0.5 42.11 ";
+        String input = "num #main ( #x ) { print \"hello,world\" ; } 0 -0.5 42.11 ";
         List<Token> tokens = new Lexer().tokenize(input);
 
         assertType(tokens, 0, TokenType.KEYWORD, "num");
-        assertType(tokens, 1, TokenType.IDENTIFIER, "#main_");
+        assertType(tokens, 1, TokenType.IDENTIFIER, "#main");
         assertType(tokens, 2, TokenType.SYMBOL, "(");
-        assertType(tokens, 3, TokenType.IDENTIFIER, "#x_");
+        assertType(tokens, 3, TokenType.IDENTIFIER, "#x");
         assertType(tokens, 4, TokenType.SYMBOL, ")");
         assertType(tokens, 5, TokenType.SYMBOL, "{");
         assertType(tokens, 6, TokenType.KEYWORD, "print");
@@ -50,12 +50,12 @@ public final class LexerTest {
     private static void rejectsMissingSeparators() {
         assertThrows("print", "must be followed by a blank space");
         assertThrows("0", "must be followed by a blank space");
-        assertThrows("#x_", "must be followed by a blank space");
+        assertThrows("#x", "must be followed by a blank space");
         assertThrows(";", "must be followed by a blank space");
     }
 
     private static void rejectsInvalidNamesNumbersAndStrings() {
-        assertThrows("#Name_ ", "must end with '_'");
+        assertThrows("#x_ ", "must be followed by a blank space");
         assertThrows("007 ", "invalid number");
         assertThrows("0.10 ", "invalid number");
         assertThrows("\"Hello\" ", "invalid character inside a string");
