@@ -10,13 +10,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import spl.tree.TreeNode;
 
-/**
- * One lexical scope in the Phase 2a scope tree.
- *
- * <p>Declarations belong directly to one scope. Lookup through ancestors is
- * deliberately implemented by {@link SymbolTable#resolve(String)} so that
- * {@link #lookupLocal(String)} remains strictly local.</p>
- */
 public final class Scope {
     private static final AtomicInteger NEXT_SCOPE_ID = new AtomicInteger();
 

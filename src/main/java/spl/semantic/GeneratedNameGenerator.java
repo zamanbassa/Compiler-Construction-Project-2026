@@ -2,13 +2,6 @@ package spl.semantic;
 
 import java.util.Objects;
 
-/**
- * Generates deterministic internal names for symbols.
- *
- * <p>Generated names are intentionally separate from source names. They are
- * suitable for later compiler stages and cannot collide between variables and
- * functions produced by the same generator.</p>
- */
 public final class GeneratedNameGenerator {
     private int nextId;
 

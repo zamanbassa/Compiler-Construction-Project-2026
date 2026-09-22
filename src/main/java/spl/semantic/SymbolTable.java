@@ -4,15 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 import spl.tree.TreeNode;
 
-/**
- * The lexical scope stack and declaration index used by Phase 2a.
- *
- * <p>{@link #lookupLocal(String)} checks only the current scope. In contrast,
- * {@link #resolve(String)} checks the current scope and then walks through its
- * parents, which allows nested scopes to shadow ancestors without allowing
- * sideways lookup between sibling scopes.</p>
- */
-public final class SymbolTable {
+public final class SymbolTable {//MAIN INTERFACE
     private final Scope rootScope;
     private final GeneratedNameGenerator generatedNameGenerator;
     private Scope currentScope;
