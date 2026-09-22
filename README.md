@@ -49,3 +49,15 @@ ASCII space, carriage return, and line feed as separators, emits an `EOF` token,
 
 Keyword and punctuation tokens use the existing generic categories `KEYWORD` and `SYMBOL`;
 their exact spelling remains available through `Token.getLexeme()` for the parser.
+
+## Phase 2a semantic symbol table
+
+The `spl.semantic` package provides the scope and declaration model used by the Phase 2a name resolver:
+
+- `SymbolTable.enterScope()` and `exitScope()` manage the lexical scope stack.
+- `declare()` creates variable or function symbols with original and generated names.
+- `lookupLocal()` searches only the current scope.
+- `resolve()` searches the current scope and then its ancestors.
+- `Symbol.getType()` starts at `SemanticType.UNKNOWN` for Phase 2b to refine.
+
+Each `Scope` retains its parent, child scopes, direct declarations, and owning `TreeNode`. Duplicate source names in one scope raise `DuplicateDeclarationException`; nested scopes may shadow ancestor declarations.
