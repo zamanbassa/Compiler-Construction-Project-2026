@@ -63,7 +63,7 @@ public final class Lexer implements ILexer {
         throw error("unexpected character " + printable(first), tokenLine, tokenColumn);
     }
 
-    /** USER-DEFINED-NAME: #(0-9|a-z)*_ */
+    /** USER-DEFINED-NAME: #(0-9|a-z)* followed by a blank space */
     private Token readUserDefinedName(int tokenLine, int tokenColumn) {
         int start = index;
         advance(); // '#'
@@ -72,10 +72,10 @@ public final class Lexer implements ILexer {
             advance();
         }
 
-        if (atEnd() || current() != '_') {
-            throw error("a user-defined name must end with '_'", tokenLine, tokenColumn);
+        if (atEnd() || !isBlank(current())) {
+            throw error("a user-defined name must be followed by a blank space",
+                    tokenLine, tokenColumn);
         }
-        advance();
 
         String lexeme = source.substring(start, index);
         requireBlankAfterToken(lexeme, tokenLine, tokenColumn);
