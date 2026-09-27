@@ -13,3 +13,6 @@
 .project
 .classpath
 .settings/
+
+# Generated XML output files
+output/*.xml

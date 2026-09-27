@@ -1,7 +1,8 @@
 package spl.lexer;
 
+/** Generic lexical categories used by the SPL parser. */
 public enum TokenType {
-    IDENTIFIER,
+    IDENTIFIER, // User defined name
     KEYWORD,
     NUMBER,
     STRING,
