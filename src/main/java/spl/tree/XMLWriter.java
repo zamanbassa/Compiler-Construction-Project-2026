@@ -46,7 +46,7 @@ public class XMLWriter {
         writer.write(indent + INDENT + "<id>" + node.getNodeId() + "</id>\n");
         writer.write(indent + INDENT + "<contents>" + escapeXml(node.getValue()) + "</contents>\n");
 
-        if (!node.isTerminal() && !node.getChildren().isEmpty()) {
+        if (!node.isTerminal()) {
             writer.write(indent + INDENT + "<children>\n");
             List<Integer> childrenIds = node.getChildrenIds();
             for (Integer childId : childrenIds) {

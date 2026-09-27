@@ -15,7 +15,14 @@ import spl.tree.TreeNode;
 public class Main {
     public static void main(String[] args) {
         try {
-            String sourceCode = Files.readString(Paths.get("input/sample.spl"));
+            if (args.length > 2) {
+                throw new IllegalArgumentException(
+                        "Usage: java spl.Main [input-file] [output-xml-file]");
+            }
+
+            String inputPath = args.length > 0 ? args[0] : "input/sample.spl";
+            String outputPath = args.length > 1 ? args[1] : "output/tree.xml";
+            String sourceCode = Files.readString(Paths.get(inputPath));
             System.out.println("=== Source Code ===");
             System.out.println(sourceCode);
             System.out.println();
@@ -37,8 +44,8 @@ public class Main {
             System.out.println("=== XML Output ===");
             TreeBuilder treeBuilder = new TreeBuilder();
             treeBuilder.setRoot(parseTree);
-            treeBuilder.buildTree("output/tree.xml");
-            System.out.println("✓ XML tree written to output/tree.xml");
+            treeBuilder.buildTree(outputPath);
+            System.out.println("✓ XML tree written to " + outputPath);
             System.out.println();
 
             System.out.println("=== Compilation Successful ===");

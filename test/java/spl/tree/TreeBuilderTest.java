@@ -18,6 +18,7 @@ public final class TreeBuilderTest {
     public static void main(String[] args) throws Exception {
         testSimpleTree();
         testComplexTree();
+        testEmptyChildrenElement();
         testParsedProgramPipeline();
         System.out.println("All XML tests passed.");
     }
@@ -69,6 +70,21 @@ public final class TreeBuilderTest {
             assert instruction.getParent() == algorithm;
             assert root.getChildren().get(0) == declarations;
             assert root.getChildren().get(1) == algorithm;
+        } finally {
+            Files.deleteIfExists(output);
+        }
+    }
+
+    private static void testEmptyChildrenElement() throws Exception {
+        TreeNode.resetIdCounter();
+
+        TreeNode root = new TreeNode("V_DECL");
+        Path output = writeAndParse(root);
+        try {
+            Document document = parseXml(output);
+            assert document.getElementsByTagName("node").getLength() == 1;
+            assert document.getElementsByTagName("children").getLength() == 1;
+            assert document.getElementsByTagName("child").getLength() == 0;
         } finally {
             Files.deleteIfExists(output);
         }
