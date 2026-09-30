@@ -1,0 +1,1 @@
+: : while larger ( #x 0 ) do { #x = sub ( #x 1 ) ; } ;
