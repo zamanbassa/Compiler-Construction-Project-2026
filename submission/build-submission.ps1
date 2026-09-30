@@ -33,12 +33,20 @@ foreach ($test in $tests) {
   java -ea -cp $classes $test
 }
 
+$generatedExe = Join-Path $dist "group-$group-1.0.exe"
+$exe = Join-Path $dist "group-$group.exe"
+
 jpackage --type exe --name "group-$group" --app-version 1.0 --input $staging `
   --main-jar $jar --main-class spl.Main --dest $dist --win-console `
   --description "SPL Phase 1 lexical and syntax analyser"
 
+if (-not (Test-Path $generatedExe)) {
+  throw "jpackage did not create $generatedExe."
+}
+Move-Item $generatedExe $exe
+
 Copy-Item (Join-Path $submission "group-$group.pdf") $dist
-Compress-Archive -Path (Join-Path $dist "group-$group.exe"), (Join-Path $dist "group-$group.pdf") `
+Compress-Archive -Path $exe, (Join-Path $dist "group-$group.pdf") `
   -DestinationPath (Join-Path $submission "group-$group.zip") -Force
 
 Write-Host "Created $dist\group-$group.exe"
