@@ -1,0 +1,312 @@
+%PDF-1.3
+%‚„œ”
+2 0 obj
+<<
+/Length 3285
+>>
+stream
+BT
+/TT2 1 Tf
+10 0 0 10 72 708 Tm
+0 g
+/GS1 gs
+0 Tc
+0.082 Tw
+(SPL Front-End User Manual Project group: 27 Group Members Full name Student number Zaman Bassa)Tj
+0 -1.2 TD
+0.1648 Tw
+(u24744931 Unathi Tshakalisa u2473081 Zelamene u24735672 Mosa u24742083 Purpose This program)Tj
+T*
+0.0092 Tw
+[(performs le)15(xical analysis follo)25(wed by syntax analysis for an SPL source )]TJ
+/TT3 1 Tf
+29.1379 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.0092 Tw
+[(le. On success it writes the gener)20(-)]TJ
+-29.694 -1.2 TD
+0.4233 Tw
+[(ated syntax tree as XML.)-923.3(W)40(indo)25(ws Usage)-3173.3(1. )-1076.7(Place)-673.3(group-27.)]TJ
+32.0651 0 TD
+-0.015 Tc
+0.4534 Tw
+[(exe i)-15(n)-688.4(a)]TJ
+4.5996 0 TD
+0 Tc
+0.4234 Tw
+[(writable folder)55(.)]TJ
+-34.1646 -1.2 TD
+0.0382 Tw
+[(2. )-1461.8(Open)-288.3(Po)25(werShell in that folder)55(.)-3038.2(3)0(.)-1750(Run the e)15(x)15(ecutable with an input SPL )]TJ
+/TT3 1 Tf
+36.4545 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.0382 Tw
+(le and an)Tj
+-39.5106 -1.2 TD
+0 Tw
+(output XML )Tj
+/TT3 1 Tf
+5.2778 0 TD
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+(le:)Tj
+-5.584 -1.2 TD
+(.oup-27.)Tj
+3.333 0 TD
+-0.015 Tc
+(exe )Tj
+33.0897 0 TD
+0 Tc
+(pathorogram.spl)Tj
+-36.6727 -1.2 TD
+0.0085 Tw
+(pathoree.xml The )Tj
+/TT3 1 Tf
+7.3197 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.0085 Tw
+[(rst ar)18(gument is the input )]TJ
+/TT3 1 Tf
+9.9952 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.0084 Tw
+[(le. The second ar)18(gument is the XML output path. P)15(arent fold-)]TJ
+-18.4272 -1.2 TD
+0.0451 Tw
+(ers for the output )Tj
+/TT3 1 Tf
+7.2898 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.0451 Tw
+[(le are created by the program when needed.)-545.1(When no ar)18(guments are supplied, the pro-)]TJ
+-7.8459 -1.2 TD
+0.0375 Tw
+[(gram reads inputple.spl and writes outputree.xml relati)25(v)15(e)15( )-15(to)-287.5(the current folder)55(.)-537.5(Output and Errors Success-)]TJ
+T*
+0.0622 Tw
+[(ful e)15(x)15(ecution prints the source, tok)10(en list, le)15(xical-analysis result, syntax-analysis result, and the XML out-)]TJ
+T*
+0.0593 Tw
+[(put location. A le)15(xical or syntax error is printed to the error stream and the program e)15(xits with a non-zero)]TJ
+T*
+0.073 Tw
+[(status. )-250(The)-323(SPL le)15(x)15(e)0(r)-323(requires a blank separator after each tok)10(en. Spaces, carriage returns, and line feeds)]TJ
+T*
+0.009 Tw
+(are accepted as separators. The dollar sign is not part of an input )Tj
+/TT3 1 Tf
+26.1077 0 TD
+0 Tw
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+0.009 Tw
+(le; it is only the parser end-of-input nota-)Tj
+-26.6639 -1.2 TD
+0 Tw
+(tion used in the speci)Tj
+/TT3 1 Tf
+8.4429 0 TD
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+[(cation.)-500(Example F)15(or an input )]TJ
+/TT3 1 Tf
+12.1212 0 TD
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+(le containing: : : print "hello" ; run:)Tj
+-21.4264 -1.2 TD
+(.oup-27.)Tj
+3.333 0 TD
+-0.015 Tc
+0.1017 Tw
+(exe e)Tj
+2.1082 0 TD
+0 Tc
+0.0717 Tw
+[(xample.spl e)15(xample-tree.xml A successful run creates e)15(xample-tree.xml. )-250.1(Requirements)-321.8(The)]TJ
+-5.6913 -1.2 TD
+0.1976 Tw
+[(submitted W)40(indo)25(ws e)15(x)15(ecutable is self-contained and does not require a separate Ja)20(v)25(a)25( )-25.1(installation. The)]TJ
+T*
+0 Tw
+[(e)15(x)15(ecutable must be run with access to the input )]TJ
+/TT3 1 Tf
+19.1033 0 TD
+(ﬁ)Tj
+/TT2 1 Tf
+0.5562 0 TD
+(le and permission to write the requested XML output.)Tj
+ET
+endstream
+endobj
+3 0 obj
+<<
+/ProcSet [/PDF /Text ]
+/Font <<
+/TT2 4 0 R
+/TT3 5 0 R
+>>
+/ExtGState <<
+/GS1 6 0 R
+>>
+>>
+endobj
+6 0 obj
+<<
+/Type /ExtGState
+/SA false
+/SM 0.02
+/OP false
+/op false
+/OPM 1
+/BG2 /Default
+/UCR2 /Default
+/HT /Default
+/TR2 /Default
+>>
+endobj
+8 0 obj
+<<
+/Type /FontDescriptor
+/Ascent 750
+/CapHeight 662
+/Descent -250
+/Flags 34
+/FontBBox [-168 -218 1000 898]
+/FontName /Times-Roman
+/ItalicAngle 0
+/StemV 84
+/XHeight 450
+/StemH 84
+>>
+endobj
+9 0 obj
+<<
+/Type /FontDescriptor
+/Ascent 750
+/CapHeight 662
+/Descent -250
+/Flags 34
+/FontBBox [-168 -218 1000 898]
+/FontName /Times-Roman
+/ItalicAngle 0
+/StemV 84
+/XHeight 450
+/StemH 84
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/FirstChar 32
+/LastChar 122
+/Widths [250 0 408 0 0 0 0 0 0 0 0 0 250 333 250 0 
+500 500 500 500 500 500 500 500 500 500 278 278 0 0 0 0 
+0 722 667 0 0 611 556 722 0 0 389 0 611 889 0 722 
+556 0 667 556 611 722 0 944 722 0 611 0 0 0 0 0 
+0 444 500 444 500 444 333 500 500 278 278 500 278 778 500 500 
+500 500 333 389 278 500 500 722 500 500 444 ]
+/Encoding /WinAnsiEncoding
+/BaseFont /Times-Roman
+/FontDescriptor 8 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/FirstChar 222
+/LastChar 222
+/Widths [556 ]
+/Encoding /MacRomanEncoding
+/BaseFont /Times-Roman
+/FontDescriptor 9 0 R
+>>
+endobj
+1 0 obj
+<<
+/Type /Page
+/Parent 7 0 R
+/Resources 3 0 R
+/Contents 2 0 R
+>>
+endobj
+10 0 obj
+<<
+/S /D
+>>
+endobj
+11 0 obj
+<<
+/Nums [0 10 0 R ]
+>>
+endobj
+7 0 obj
+<<
+/Type /Pages
+/Kids [1 0 R]
+/Count 1
+/MediaBox [0 0 612 792]
+>>
+endobj
+12 0 obj
+<<
+/CreationDate (D:20260930173855+02'00')
+/ModDate (D:20260930173855+02'00')
+/Producer (Apple pstopdf)
+>>
+endobj
+13 0 obj
+<<
+/Type /Catalog
+/Pages 7 0 R
+/PageLabels 11 0 R
+>>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000004630 00000 n 
+0000000016 00000 n 
+0000003353 00000 n 
+0000003991 00000 n 
+0000004461 00000 n 
+0000003459 00000 n 
+0000004778 00000 n 
+0000003599 00000 n 
+0000003795 00000 n 
+0000004710 00000 n 
+0000004738 00000 n 
+0000004859 00000 n 
+0000004982 00000 n 
+trailer
+<<
+/Size 14
+/Root 13 0 R
+/Info 12 0 R
+/ID [<7f500070a4b3c42a90351ff5bd9722f0><7f500070a4b3c42a90351ff5bd9722f0>]
+>>
+startxref
+5051
+%%EOF
