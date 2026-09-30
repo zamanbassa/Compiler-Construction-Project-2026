@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>console</headerType>
+  <outfile>dist\group-27.exe</outfile>
+  <jar>staging\group-27.jar</jar>
+  <classPath>
+    <mainClass>spl.Main</mainClass>
+  </classPath>
+  <jre>
+    <minVersion>21</minVersion>
+  </jre>
+  <versionInfo>
+    <fileVersion>1.0.0.0</fileVersion>
+    <txtFileVersion>1.0.0</txtFileVersion>
+    <fileDescription>SPL Phase 1 lexical and syntax analyser</fileDescription>
+    <productName>Group 27 SPL Compiler</productName>
+    <productVersion>1.0.0</productVersion>
+    <internalName>group-27</internalName>
+    <originalFilename>group-27.exe</originalFilename>
+  </versionInfo>
+</launch4jConfig>
