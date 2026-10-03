@@ -18,6 +18,10 @@ public class DeclarationResolverTest {
         registersParameters();
         supportsNestedShadowing();
         rejectsDuplicateVariables();
+        rejectsDuplicateParameters();
+        rejectsDuplicateFunctions();
+        preservesLexemesAndGeneratesDeterministicNames();
+        allowsRecursionAndCallsToLaterSiblings();
         registersSiblingFunctionsBeforeBodies();
 
         System.out.println("Declaration resolver tests passed.");
@@ -126,6 +130,76 @@ public class DeclarationResolverTest {
         } catch (DuplicateDeclarationException expected) {
             assert expected.getMessage().contains("#x");
         }
+    }
+
+    private static void rejectsDuplicateParameters() throws Exception {
+        try {
+            resolve(": void #f ( #x #x ) { : : return } : ");
+
+            throw new AssertionError("expected duplicate parameter");
+
+        } catch (DuplicateDeclarationException expected) {
+            assert expected.getMessage().contains("#x");
+        }
+    }
+
+    private static void rejectsDuplicateFunctions() throws Exception {
+        try {
+            resolve(": void #f ( ) { : : return } "
+                    + "void #f ( ) { : : return } : ");
+
+            throw new AssertionError("expected duplicate function");
+
+        } catch (DuplicateDeclarationException expected) {
+            assert expected.getMessage().contains("#f");
+        }
+    }
+
+    private static void preservesLexemesAndGeneratesDeterministicNames()
+            throws Exception {
+        String source = "#x : void #f ( #x ) { : : return } : ";
+
+        SymbolTable first = resolve(source);
+        SymbolTable second = resolve(source);
+
+        Symbol firstRootVariable = first.getRootScope()
+                .lookupLocal("#x").orElseThrow();
+        Symbol firstFunction = first.getRootScope()
+                .lookupLocal("#f").orElseThrow();
+        Symbol firstParameter = first.getRootScope().getChildScopes().get(0)
+                .lookupLocal("#x").orElseThrow();
+
+        Symbol secondRootVariable = second.getRootScope()
+                .lookupLocal("#x").orElseThrow();
+        Symbol secondFunction = second.getRootScope()
+                .lookupLocal("#f").orElseThrow();
+        Symbol secondParameter = second.getRootScope().getChildScopes().get(0)
+                .lookupLocal("#x").orElseThrow();
+
+        assert firstRootVariable.getOriginalName().equals("#x");
+        assert firstFunction.getOriginalName().equals("#f");
+        assert firstParameter.getOriginalName().equals("#x");
+        assert !firstRootVariable.getGeneratedName()
+                .equals(firstParameter.getGeneratedName());
+        assert firstRootVariable.getGeneratedName()
+                .equals(secondRootVariable.getGeneratedName());
+        assert firstFunction.getGeneratedName()
+                .equals(secondFunction.getGeneratedName());
+        assert firstParameter.getGeneratedName()
+                .equals(secondParameter.getGeneratedName());
+    }
+
+    private static void allowsRecursionAndCallsToLaterSiblings()
+            throws Exception {
+        String source = ": "
+                + "void #f ( ) { : : #f ( ) ; #g ( ) ; return } "
+                + "void #g ( ) { : : return } "
+                + ": ";
+
+        SymbolTable table = resolve(source);
+
+        assert table.getRootScope().lookupLocal("#f").isPresent();
+        assert table.getRootScope().lookupLocal("#g").isPresent();
     }
 
     private static void registersSiblingFunctionsBeforeBodies()

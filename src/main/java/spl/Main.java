@@ -3,12 +3,13 @@ package spl;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-
 import spl.lexer.Lexer;
 import spl.lexer.LexicalException;
 import spl.lexer.Token;
 import spl.parser.Parser;
 import spl.parser.SyntaxError;
+import spl.semantic.DeclarationResolver;
+import spl.semantic.DuplicateDeclarationException;
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
 
@@ -34,6 +35,11 @@ public class Main {
             System.out.println("✓ Parsing successful. Parse tree generated.");
             System.out.println();
 
+            System.out.println("=== Semantic Analysis ===");
+            new DeclarationResolver().resolve(parseTree);
+            System.out.println("✓ Declaration analysis successful.");
+            System.out.println();
+
             System.out.println("=== XML Output ===");
             TreeBuilder treeBuilder = new TreeBuilder();
             treeBuilder.setRoot(parseTree);
@@ -49,6 +55,10 @@ public class Main {
             System.exit(1);
         } catch (SyntaxError e) {
             System.err.println("✗ Syntax Error: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        } catch (DuplicateDeclarationException e) {
+            System.err.println("✗ Semantic Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         } catch (Exception e) {
