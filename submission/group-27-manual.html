@@ -33,13 +33,13 @@
 
   <h2>Windows Usage</h2>
   <ol>
-    <li>Place <code>group-27.exe</code> in a writable folder.</li>
-    <li>Open PowerShell in that folder.</li>
+    <li>Extract the submitted ZIP without separating <code>group-27.exe</code> from the <code>jre</code> folder.</li>
+    <li>Place an SPL input file where you can access it.</li>
+    <li>Open PowerShell in the folder containing <code>group-27.exe</code>.</li>
     <li>Run the executable with an input SPL file and an output XML file:</li>
   </ol>
   <pre> .\group-27.exe path\to\program.spl path\to\tree.xml</pre>
-  <p>The first argument is the input file. The second argument is the XML output path. Parent folders for the output file are created by the program when needed.</p>
-  <p>When no arguments are supplied, the program reads <code>input\sample.spl</code> and writes <code>output\tree.xml</code> relative to the current folder.</p>
+  <p>The first argument is the input file. The second argument is the XML output path. Parent folders for the output file are created by the program when needed. Absolute paths may also be used.</p>
 
   <h2>Output and Errors</h2>
   <p>Successful execution prints the source, token list, lexical-analysis result, syntax-analysis result, and the XML output location. A lexical or syntax error is printed to the error stream and the program exits with a non-zero status.</p>
@@ -52,7 +52,12 @@
   <pre> .\group-27.exe example.spl example-tree.xml</pre>
   <p>A successful run creates <code>example-tree.xml</code>.</p>
 
+  <h2>Input Formatting</h2>
+  <p>Every SPL token must be followed by a space, carriage return, or line feed. Ensure that the final token, including a final semicolon, is followed by a newline or space. For example:</p>
+  <pre>: : print "hello" ;
+</pre>
+
   <h2>Requirements</h2>
-  <p>The submitted Windows executable is self-contained and does not require a separate Java installation. The executable must be run with access to the input file and permission to write the requested XML output.</p>
+  <p>The submitted ZIP includes a bundled Java runtime in the <code>jre</code> folder, so a separate Java installation is not required. Keep the <code>jre</code> folder beside <code>group-27.exe</code>. The executable must have access to the input file and permission to write the requested XML output.</p>
 </body>
 </html>
