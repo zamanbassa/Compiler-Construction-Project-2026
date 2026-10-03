@@ -2,6 +2,7 @@ package spl.tree;
 
 import java.util.ArrayList;
 import java.util.List;
+import spl.semantic.Symbol;
 
 public class TreeNode {
     private static int idCounter = 0;
@@ -11,6 +12,7 @@ public class TreeNode {
     private final boolean isTerminal;
     private final List<TreeNode> children = new ArrayList<>();
     private TreeNode parent;
+    private Symbol resolvedSymbol;
 
     public TreeNode(String value) {
         this(value,false);
@@ -41,6 +43,14 @@ public class TreeNode {
 
     public TreeNode getParent(){
         return parent;
+    }
+
+    public Symbol getResolvedSymbol() {
+        return resolvedSymbol;
+    }
+
+    public void setResolvedSymbol(Symbol resolvedSymbol) {
+        this.resolvedSymbol = resolvedSymbol;
     }
 
     public void addChild(TreeNode child) {

@@ -10,6 +10,7 @@ import spl.parser.Parser;
 import spl.parser.SyntaxError;
 import spl.semantic.DeclarationResolver;
 import spl.semantic.DuplicateDeclarationException;
+import spl.semantic.NameResolutionException;
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
 
@@ -65,6 +66,10 @@ public class Main {
             e.printStackTrace();
             System.exit(1);
         } catch (DuplicateDeclarationException e) {
+            System.err.println("✗ Semantic Error: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        } catch (NameResolutionException e) {
             System.err.println("✗ Semantic Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
