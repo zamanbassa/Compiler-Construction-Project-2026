@@ -3,13 +3,16 @@ package spl.semantic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import spl.tree.TreeNode;
 
 public class DeclarationResolver {
     private SymbolTable symbolTable;
 
     public SymbolTable resolve(TreeNode root) {
+        return resolveWithResult(root).getSymbolTable();
+    }
+
+    public Phase2aResult resolveWithResult(TreeNode root) {
         Objects.requireNonNull(root, "root");
 
         symbolTable = new SymbolTable();
@@ -17,7 +20,7 @@ public class DeclarationResolver {
         TreeNode program = unwrapProgram(root);
         processProgram(program);
 
-        return symbolTable;
+        return new Phase2aResult(root, symbolTable);
     }
 
      private TreeNode unwrapProgram(TreeNode root) {
@@ -50,6 +53,9 @@ public class DeclarationResolver {
         for (TreeNode function : functions) {
             processFunction(function);
         }
+
+        TreeNode algorithm = childWithValue(programNode, "ALGO");
+        resolveAlgorithm(algorithm);
     }
 
      private void declareVariables(TreeNode variableDeclarations) {
@@ -117,9 +123,57 @@ public class DeclarationResolver {
                 processProgram(bodyProgram);
             }
 
+            TreeNode returnTerm = findDirectChild(functionNode, "TERM");
+            if (returnTerm != null) {
+                resolveUsageTree(returnTerm);
+            }
+
         } finally {
             symbolTable.exitScope();
         }
+    }
+
+    private void resolveAlgorithm(TreeNode algorithmNode) {
+        for (TreeNode child : algorithmNode.getChildren()) {
+            resolveUsageTree(child);
+        }
+    }
+
+    private void resolveUsageTree(TreeNode node) {
+        if (isUserDefinedName(node)) {
+            TreeNode parent = node.getParent();
+
+            if (parent != null && "CALL".equals(parent.getValue())
+                    && parent.getChildren().get(0) == node) {
+                resolveUsage(node, SymbolKind.FUNCTION);
+            } else if (parent != null && "ASSIGN".equals(parent.getValue())
+                    && parent.getChildren().get(0) == node) {
+                resolveUsage(node, SymbolKind.VARIABLE);
+            } else if (parent != null && "TERM".equals(parent.getValue())) {
+                resolveUsage(node, SymbolKind.VARIABLE);
+            }
+        }
+
+        for (TreeNode child : node.getChildren()) {
+            resolveUsageTree(child);
+        }
+    }
+
+    private void resolveUsage(TreeNode usageNode, SymbolKind expectedKind) {
+        String sourceName = usageNode.getValue();
+        Symbol symbol = symbolTable.resolve(sourceName).orElseThrow(
+                () -> new NameResolutionException(sourceName, expectedKind));
+
+        if (symbol.getKind() != expectedKind) {
+            throw new NameResolutionException(
+                    sourceName, expectedKind, symbol.getKind());
+        }
+
+        usageNode.setResolvedSymbol(symbol);
+    }
+
+    private boolean isUserDefinedName(TreeNode node) {
+        return node.isTerminal() && node.getValue().startsWith("#");
     }
 
     private TreeNode functionNameNode(TreeNode functionNode) {

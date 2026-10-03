@@ -19,7 +19,7 @@ public final class MainTest {
         Path input = Files.createTempFile("spl-main-test-", ".spl");
         Path output = Files.createTempFile("spl-main-test-", ".xml");
         try {
-            Files.writeString(input, ": : print \"hello\" ; ");
+            Files.writeString(input, "#x : : print \"hello\" ; ");
             Files.deleteIfExists(output);
 
             Main.main(new String[] {input.toString(), output.toString()});

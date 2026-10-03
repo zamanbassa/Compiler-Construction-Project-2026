@@ -13,6 +13,7 @@ public class DeclarationResolverTest {
 
     public static void main(String[] args) throws Exception {
         createsRootScope();
+        returnsResolvedTreeAndSymbolTable();
         registersProgramVariables();
         createsFunctionScope();
         registersParameters();
@@ -22,6 +23,12 @@ public class DeclarationResolverTest {
         rejectsDuplicateFunctions();
         preservesLexemesAndGeneratesDeterministicNames();
         allowsRecursionAndCallsToLaterSiblings();
+        resolvesVariableUsesToNearestDeclaration();
+        resolvesThroughFunctionAncestorsOnly();
+        rejectsUndefinedAndSidewaysVariableUses();
+        rejectsUndefinedAndInvalidFunctionCalls();
+        rejectsParentCallingChildFunction();
+        resolvesRecursiveFunctionCalls();
         registersSiblingFunctionsBeforeBodies();
 
         System.out.println("Declaration resolver tests passed.");
@@ -33,6 +40,15 @@ public class DeclarationResolverTest {
         assert table.getRootScope() != null;
         assert table.getRootScope().getParent() == null;
     }
+
+        private static void returnsResolvedTreeAndSymbolTable() throws Exception {
+                TreeNode tree = parse("#x : : ");
+                Phase2aResult result = new DeclarationResolver().resolveWithResult(tree);
+
+                assert result.getResolvedTree() == tree;
+                assert result.getSymbolTable().getRootScope()
+                                .lookupLocal("#x").isPresent();
+        }
 
     private static void registersProgramVariables() throws Exception {
         SymbolTable table = resolve("#x #y : : ");
@@ -202,6 +218,99 @@ public class DeclarationResolverTest {
         assert table.getRootScope().lookupLocal("#g").isPresent();
     }
 
+        private static void resolvesVariableUsesToNearestDeclaration()
+                        throws Exception {
+                String source = ": void #f ( #x ) { : : print ( #x ) ; return } : ";
+                TreeNode tree = parse(source);
+                SymbolTable table = new DeclarationResolver().resolve(tree);
+
+                TreeNode use = findNodes(tree, "#x").get(1);
+                Symbol parameter = table.getRootScope().getChildScopes().get(0)
+                                .lookupLocal("#x").orElseThrow();
+
+                assert use.getResolvedSymbol() == parameter;
+                assert use.getResolvedSymbol().getGeneratedName()
+                                .equals(parameter.getGeneratedName());
+        }
+
+        private static void rejectsUndefinedAndSidewaysVariableUses()
+                        throws Exception {
+                assertUndefined(": : #missing = 0 ; ");
+
+                String source = ": void #f ( ) { "
+                                + ": void #g ( ) { #x : void #j ( ) { : : #x = 0 ; return } : return } "
+                                + "void #h ( ) { : void #k ( ) { : : #x = 0 ; return } : return } "
+                                + ": return } : ";
+
+                assertUndefined(source);
+        }
+
+        private static void rejectsUndefinedAndInvalidFunctionCalls()
+                        throws Exception {
+                assertUndefined(": : #missing ( ) ; ");
+                assertUndefined("#x : : #x ( ) ; ");
+        }
+
+        private static void rejectsParentCallingChildFunction() throws Exception {
+                String source = ": void #f ( ) { "
+                        + ": void #g ( ) { : void #j ( ) { : : return } : return } "
+                        + ": #j ( ) ; return } : ";
+
+                assertUndefined(source);
+        }
+
+        private static void resolvesThroughFunctionAncestorsOnly()
+                        throws Exception {
+                String source = ": void #f ( ) { "
+                                + ": void #g ( ) { #x : void #j ( ) { : : #x = 0 ; return } : return } "
+                                + ": return } : ";
+                TreeNode tree = parse(source);
+                SymbolTable table = new DeclarationResolver().resolve(tree);
+
+                List<TreeNode> names = findNodes(tree, "#x");
+                Symbol declaration = table.getRootScope().getChildScopes().get(0)
+                        .getChildScopes().get(0).lookupLocal("#x").orElseThrow();
+                assert names.size() == 2;
+                assert names.get(1).getResolvedSymbol() == declaration;
+        }
+
+        private static void resolvesRecursiveFunctionCalls() throws Exception {
+                String source = ": void #f ( ) { : : #f ( ) ; return } : ";
+                TreeNode tree = parse(source);
+                SymbolTable table = new DeclarationResolver().resolve(tree);
+
+                TreeNode callName = findNodes(tree, "#f").get(1);
+                Symbol function = table.getRootScope().lookupLocal("#f")
+                                .orElseThrow();
+
+                assert callName.getResolvedSymbol() == function;
+        }
+
+        private static void assertUndefined(String source) throws Exception {
+                try {
+                        new DeclarationResolver().resolve(parse(source));
+                        throw new AssertionError("expected undefined-name error");
+                } catch (NameResolutionException expected) {
+                        assert expected.getMessage().contains("#");
+                }
+        }
+
+        private static TreeNode parse(String source) throws Exception {
+                List<Token> tokens = new Lexer().tokenize(source);
+                return new Parser().parse(tokens);
+        }
+
+        private static List<TreeNode> findNodes(TreeNode node, String value) {
+                List<TreeNode> matches = new java.util.ArrayList<>();
+                if (value.equals(node.getValue())) {
+                        matches.add(node);
+                }
+                for (TreeNode child : node.getChildren()) {
+                        matches.addAll(findNodes(child, value));
+                }
+                return matches;
+        }
+
     private static void registersSiblingFunctionsBeforeBodies()
             throws Exception {
 
@@ -224,12 +333,6 @@ public class DeclarationResolverTest {
     private static SymbolTable resolve(String source)
             throws Exception {
 
-        List<Token> tokens =
-                new Lexer().tokenize(source);
-
-        TreeNode tree =
-                new Parser().parse(tokens);
-
-        return new DeclarationResolver().resolve(tree);
+        return new DeclarationResolver().resolve(parse(source));
     }
 }

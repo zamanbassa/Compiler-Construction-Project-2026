@@ -44,6 +44,7 @@ javac -d $classes $sources
   "spl.parser.ParserTest",
   "spl.tree.TreeBuilderTest",
   "spl.semantic.SemanticDataStructureTest",
+  "spl.semantic.DeclarationResolverTest",
   "spl.MainTest"
 ) | ForEach-Object { java -ea -cp $classes $_ }
 ```
@@ -57,6 +58,7 @@ for test in \
   spl.parser.ParserTest \
   spl.tree.TreeBuilderTest \
   spl.semantic.SemanticDataStructureTest \
+  spl.semantic.DeclarationResolverTest \
   spl.MainTest; do
   java -ea -cp out/classes "$test" || exit 1
 done
@@ -83,6 +85,7 @@ The `spl.semantic` package provides the scope and declaration model used by the 
 - `declare()` creates variable or function symbols with original and generated names.
 - `lookupLocal()` searches only the current scope.
 - `resolve()` searches the current scope and then its ancestors.
+- `DeclarationResolver.resolveWithResult()` returns both the resolved syntax tree and the `SymbolTable` for Phase 2b.
 - `Symbol.getType()` starts at `SemanticType.UNKNOWN` for Phase 2b to refine.
 
 Each `Scope` retains its parent, child scopes, direct declarations, and owning `TreeNode`. Duplicate source names in one scope raise `DuplicateDeclarationException`; nested scopes may shadow ancestor declarations.
@@ -94,5 +97,15 @@ Each `Scope` retains its parent, child scopes, direct declarations, and owning `
 ```text
 java -cp out/classes spl.Main <input-file> <output-xml-file>
 ```
+
+Phase 2a tests can be run on macOS/Linux with:
+
+```text
+javac -d out/classes $(find src/main/java test/java -name "*.java")
+java -ea -cp out/classes spl.semantic.DeclarationResolverTest
+java -ea -cp out/classes spl.MainTest
+```
+
+`Main` runs lexing, parsing, and Phase 2a declaration and lexical name resolution before writing the syntax tree. The resulting `Phase2aResult` retains both the resolved tree and symbol table for Phase 2b.
 
 The parser currently uses the generated SLR parse table supplied with the project. This is intentional: it keeps the grammar decision explicit and deterministic while preserving the existing Phase 1 parser behaviour. The XML document remains wrapped in `<tree>` until the tutor confirms whether a different document root is required.
