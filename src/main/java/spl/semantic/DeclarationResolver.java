@@ -3,13 +3,16 @@ package spl.semantic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import spl.tree.TreeNode;
 
 public class DeclarationResolver {
     private SymbolTable symbolTable;
 
     public SymbolTable resolve(TreeNode root) {
+        return resolveWithResult(root).getSymbolTable();
+    }
+
+    public Phase2aResult resolveWithResult(TreeNode root) {
         Objects.requireNonNull(root, "root");
 
         symbolTable = new SymbolTable();
@@ -17,7 +20,7 @@ public class DeclarationResolver {
         TreeNode program = unwrapProgram(root);
         processProgram(program);
 
-        return symbolTable;
+        return new Phase2aResult(root, symbolTable);
     }
 
      private TreeNode unwrapProgram(TreeNode root) {

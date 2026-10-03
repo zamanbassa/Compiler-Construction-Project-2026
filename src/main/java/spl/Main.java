@@ -11,6 +11,7 @@ import spl.parser.SyntaxError;
 import spl.semantic.DeclarationResolver;
 import spl.semantic.DuplicateDeclarationException;
 import spl.semantic.NameResolutionException;
+import spl.semantic.Phase2aResult;
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
 
@@ -44,13 +45,17 @@ public class Main {
             System.out.println();
 
             System.out.println("=== Semantic Analysis ===");
-            new DeclarationResolver().resolve(parseTree);
+                Phase2aResult phase2aResult =
+                    new DeclarationResolver().resolveWithResult(parseTree);
             System.out.println("✓ Declaration analysis successful.");
+                System.out.println("✓ Symbol table ready for Phase 2b: "
+                    + phase2aResult.getSymbolTable().getRootScope().getDeclarations().size()
+                    + " root declarations.");
             System.out.println();
 
             System.out.println("=== XML Output ===");
             TreeBuilder treeBuilder = new TreeBuilder();
-            treeBuilder.setRoot(parseTree);
+            treeBuilder.setRoot(phase2aResult.getResolvedTree());
             treeBuilder.buildTree(outputPath);
             System.out.println("✓ XML tree written to " + outputPath);
             System.out.println();

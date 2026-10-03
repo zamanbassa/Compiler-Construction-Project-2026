@@ -13,6 +13,7 @@ public class DeclarationResolverTest {
 
     public static void main(String[] args) throws Exception {
         createsRootScope();
+        returnsResolvedTreeAndSymbolTable();
         registersProgramVariables();
         createsFunctionScope();
         registersParameters();
@@ -25,6 +26,8 @@ public class DeclarationResolverTest {
         resolvesVariableUsesToNearestDeclaration();
         resolvesThroughFunctionAncestorsOnly();
         rejectsUndefinedAndSidewaysVariableUses();
+        rejectsUndefinedAndInvalidFunctionCalls();
+        rejectsParentCallingChildFunction();
         resolvesRecursiveFunctionCalls();
         registersSiblingFunctionsBeforeBodies();
 
@@ -37,6 +40,15 @@ public class DeclarationResolverTest {
         assert table.getRootScope() != null;
         assert table.getRootScope().getParent() == null;
     }
+
+        private static void returnsResolvedTreeAndSymbolTable() throws Exception {
+                TreeNode tree = parse("#x : : ");
+                Phase2aResult result = new DeclarationResolver().resolveWithResult(tree);
+
+                assert result.getResolvedTree() == tree;
+                assert result.getSymbolTable().getRootScope()
+                                .lookupLocal("#x").isPresent();
+        }
 
     private static void registersProgramVariables() throws Exception {
         SymbolTable table = resolve("#x #y : : ");
@@ -229,6 +241,20 @@ public class DeclarationResolverTest {
                                 + ": void #g ( ) { #x : void #j ( ) { : : #x = 0 ; return } : return } "
                                 + "void #h ( ) { : void #k ( ) { : : #x = 0 ; return } : return } "
                                 + ": return } : ";
+
+                assertUndefined(source);
+        }
+
+        private static void rejectsUndefinedAndInvalidFunctionCalls()
+                        throws Exception {
+                assertUndefined(": : #missing ( ) ; ");
+                assertUndefined("#x : : #x ( ) ; ");
+        }
+
+        private static void rejectsParentCallingChildFunction() throws Exception {
+                String source = ": void #f ( ) { "
+                        + ": void #g ( ) { : void #j ( ) { : : return } : return } "
+                        + ": #j ( ) ; return } : ";
 
                 assertUndefined(source);
         }
