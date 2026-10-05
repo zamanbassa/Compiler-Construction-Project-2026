@@ -109,3 +109,25 @@ java -ea -cp out/classes spl.MainTest
 `Main` runs lexing, parsing, and Phase 2a declaration and lexical name resolution before writing the syntax tree. The resulting `Phase2aResult` retains both the resolved tree and symbol table for Phase 2b.
 
 The parser currently uses the generated SLR parse table supplied with the project. This is intentional: it keeps the grammar decision explicit and deterministic while preserving the existing Phase 1 parser behaviour. The XML document remains wrapped in `<tree>` until the tutor confirms whether a different document root is required.
+
+## Phase 2b type model
+
+`SemanticType` contains UNKNOWN, OK, NUMERIC, PROCEDURE and BOOLEAN.
+Both `TreeNode` and `Symbol` expose `getType()` and `setType(SemanticType)`;
+new instances start at UNKNOWN and null types are rejected. Node types and
+symbol types are separate: the analyser must explicitly annotate the node and
+update its declaration symbol where the specification requires it.
+
+Phase 2b must consume the existing `Phase2aResult` tree and symbol table.
+Use `TreeNode.getResolvedSymbol()` for declaration identity; do not rerun
+`DeclarationResolver` or resolve source names again. Type errors should throw
+`TypeAnalysisException`, whose diagnostics begin with "Type analysis error".
+Its optional node constructor reports a node ID, not a source line number.
+This issue provides the model only; the tree crawler and semantic rules remain
+for the subsequent type-analyser implementation.
+
+After compiling production and test sources, run:
+
+```text
+java -ea -cp out/classes spl.semantic.TypeModelTest
+```
