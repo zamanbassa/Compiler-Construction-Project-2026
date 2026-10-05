@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Group 27 SPL Front-End User Manual</title>
+  <style>
+    @page { size: A4; margin: 22mm; }
+    body { font-family: Arial, sans-serif; color: #202124; line-height: 1.45; }
+    h1 { color: #17365d; margin-bottom: 0.2em; }
+    h2 { color: #17365d; border-bottom: 1px solid #9fbad0; padding-bottom: 0.15em; margin-top: 1.4em; }
+    code, pre { font-family: Consolas, monospace; }
+    pre { background: #f2f5f7; border: 1px solid #d8e0e6; padding: 10px; white-space: pre-wrap; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #9fbad0; padding: 7px; text-align: left; }
+    th { background: #eaf1f7; }
+  </style>
+</head>
+<body>
+  <h1>SPL Front-End User Manual</h1>
+  <p><strong>Project group:</strong> 27</p>
+
+  <h2>Group Members</h2>
+  <table>
+    <tr><th>Full name</th><th>Student number</th></tr>
+    <tr><td>Zaman Bassa</td><td>u24744931</td></tr>
+    <tr><td>Unathi Tshakalisa</td><td>u2473081</td></tr>
+    <tr><td>Zelamene</td><td>u24735672</td></tr>
+    <tr><td>Mosa</td><td>u24742083</td></tr>
+  </table>
+
+  <h2>Purpose</h2>
+  <p>This program performs lexical analysis followed by syntax analysis for an SPL source file. On success it writes the generated syntax tree as XML.</p>
+
+  <h2>Windows Usage</h2>
+  <ol>
+    <li>Extract the submitted ZIP without separating <code>group-27.exe</code> from the <code>jre</code> folder.</li>
+    <li>Place an SPL input file where you can access it.</li>
+    <li>Open PowerShell in the folder containing <code>group-27.exe</code>.</li>
+    <li>Run the executable with an input SPL file and an output XML file:</li>
+  </ol>
+  <pre> .\group-27.exe path\to\program.spl path\to\tree.xml</pre>
+  <p>The first argument is the input file. The second argument is the XML output path. Parent folders for the output file are created by the program when needed. Absolute paths may also be used.</p>
+
+  <h2>Output and Errors</h2>
+  <p>Successful execution prints the source, token list, lexical-analysis result, syntax-analysis result, and the XML output location. A lexical or syntax error is printed to the error stream and the program exits with a non-zero status.</p>
+  <p>The SPL lexer requires a blank separator after each token. Spaces, carriage returns, and line feeds are accepted as separators. The dollar sign is not part of an input file; it is only the parser end-of-input notation used in the specification.</p>
+
+  <h2>Example</h2>
+  <p>For an input file containing:</p>
+  <pre>: : print "hello" ; </pre>
+  <p>run:</p>
+  <pre> .\group-27.exe example.spl example-tree.xml</pre>
+  <p>A successful run creates <code>example-tree.xml</code>.</p>
+
+  <h2>Input Formatting</h2>
+  <p>Every SPL token must be followed by a space, carriage return, or line feed. Ensure that the final token, including a final semicolon, is followed by a newline or space. For example:</p>
+  <pre>: : print "hello" ;
+</pre>
+
+  <h2>Requirements</h2>
+  <p>The submitted ZIP includes a bundled Java runtime in the <code>jre</code> folder, so a separate Java installation is not required. Keep the <code>jre</code> folder beside <code>group-27.exe</code>. The executable must have access to the input file and permission to write the requested XML output.</p>
+</body>
+</html>
