@@ -16,3 +16,6 @@
 
 # Generated XML output files
 output/*.xml
+
+# file for commands for running tests
+some_file.txt
