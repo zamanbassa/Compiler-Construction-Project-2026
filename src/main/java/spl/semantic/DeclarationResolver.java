@@ -71,10 +71,11 @@ public class DeclarationResolver {
 
             TreeNode nameNode = current.getChildren().get(0);
 
-            symbolTable.declare(
+            Symbol symbol= symbolTable.declare(
                     nameNode.getValue(),
                     SymbolKind.VARIABLE,
                     nameNode);
+            nameNode.setResolvedSymbol(symbol);
 
             current = findDirectChild(current, "V_DECL");
         }
@@ -104,10 +105,11 @@ public class DeclarationResolver {
     private void declareFunction(TreeNode functionNode) {
         TreeNode nameNode = functionNameNode(functionNode);
 
-        symbolTable.declare(
+        Symbol symbol = symbolTable.declare(
                 nameNode.getValue(),
                 SymbolKind.FUNCTION,
                 nameNode);
+        nameNode.setResolvedSymbol(symbol);
     }
 
     private void processFunction(TreeNode functionNode) {
