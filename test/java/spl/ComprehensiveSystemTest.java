@@ -242,7 +242,7 @@ public final class ComprehensiveSystemTest {
         Path input = directory.resolve("program.spl");
         Path output = directory.resolve("deep").resolve("result.xml");
         try {
-            Files.writeString(input, ": : print \"custom-smoke\" ; #x = mul ( 6 7 ) ; ");
+            Files.writeString(input, "#x : : print \"custom-smoke\" ; #x = mul ( 6 7 ) ; ");
             Main.main(new String[] {input.toString(), output.toString()});
 
             assert Files.exists(output) : "Main did not create the custom output";

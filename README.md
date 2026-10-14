@@ -44,6 +44,7 @@ javac -d $classes $sources
   "spl.parser.ParserTest",
   "spl.tree.TreeBuilderTest",
   "spl.semantic.SemanticDataStructureTest",
+  "spl.semantic.DeclarationResolverTest",
   "spl.MainTest"
 ) | ForEach-Object { java -ea -cp $classes $_ }
 ```
@@ -57,6 +58,7 @@ for test in \
   spl.parser.ParserTest \
   spl.tree.TreeBuilderTest \
   spl.semantic.SemanticDataStructureTest \
+  spl.semantic.DeclarationResolverTest \
   spl.MainTest; do
   java -ea -cp out/classes "$test" || exit 1
 done
@@ -83,9 +85,10 @@ The `spl.semantic` package provides the scope and declaration model used by the 
 - `declare()` creates variable or function symbols with original and generated names.
 - `lookupLocal()` searches only the current scope.
 - `resolve()` searches the current scope and then its ancestors.
+- `DeclarationResolver.resolveWithResult()` returns both the resolved syntax tree and the `SymbolTable` for Phase 2b.
 - `Symbol.getType()` starts at `SemanticType.UNKNOWN` for Phase 2b to refine.
 
-Each `Scope` retains its parent, child scopes, direct declarations, and owning `TreeNode`. Duplicate source names in one scope raise `DuplicateDeclarationException`; nested scopes may shadow ancestor declarations.
+Each `Scope` retains its parent, child scopes, direct declarations, and owning `TreeNode`. Duplicate source names in one scope raise `DuplicateDeclarationException`; nested variables may shadow ancestor declarations, but function-body locals may not duplicate parameters. Variable uses search ancestors, never sideways. Function calls resolve only in the current program scope's immediate `F_DECL`; self-recursion, mutual recursion, and calls to ancestor/sibling functions are rejected.
 
 ## Running the compiler
 
@@ -95,4 +98,53 @@ Each `Scope` retains its parent, child scopes, direct declarations, and owning `
 java -cp out/classes spl.Main <input-file> <output-xml-file>
 ```
 
+Phase 2a tests can be run on macOS/Linux with:
+
+```text
+javac -d out/classes $(find src/main/java test/java -name "*.java")
+java -ea -cp out/classes spl.semantic.DeclarationResolverTest
+java -ea -cp out/classes spl.MainTest
+```
+
+`Main` runs lexing, parsing, Phase 2a name resolution, and Phase 2b type analysis before writing the syntax tree. `Phase2aResult` preserves the resolved tree and symbol table. Expected user-program errors display the failing phase and message and exit with code 1. Unexpected internal errors exit with code 2.
+
 The parser currently uses the generated SLR parse table supplied with the project. This is intentional: it keeps the grammar decision explicit and deterministic while preserving the existing Phase 1 parser behaviour. The XML document remains wrapped in `<tree>` until the tutor confirms whether a different document root is required.
+
+## Phase 2b type model
+
+`SemanticType` contains UNKNOWN, OK, NUMERIC, PROCEDURE and BOOLEAN.
+Both `TreeNode` and `Symbol` expose `getType()` and `setType(SemanticType)`;
+new instances start at UNKNOWN and null types are rejected. Node types and
+symbol types are separate: the analyser must explicitly annotate the node and
+update its declaration symbol where the specification requires it.
+
+Phase 2b must consume the existing `Phase2aResult` tree and symbol table.
+Use `TreeNode.getResolvedSymbol()` for declaration identity; do not rerun
+`DeclarationResolver` or resolve source names again. Type errors should throw
+`TypeAnalysisException`, whose diagnostics begin with "Type analysis error".
+Its optional node constructor reports a node ID, not a source line number.
+`TypeAnalyzer.analyze()` runs the tree crawler and the global mod/div conflict check.
+Both mod+div and mod+decimal programs are rejected with the specified conflict
+message. `Main` reports numeric conflicts as normal type-checking failures.
+Assignment targets and call-name nodes receive their resolved symbol types.
+OUTP containing a STRING is OK; no semantic STRING type is required.
+
+After compiling production and test sources, run:
+
+```text
+java -ea -cp out/classes spl.semantic.TypeModelTest
+```
+
+## Semantic closeout regression tests
+
+After compiling all production and test sources, run:
+
+```text
+java -ea -cp out/classes spl.semantic.Phase2CloseoutTest
+```
+
+This checks hierarchical function calls, recursion rejection, ancestor-only variable
+lookup, name annotations, numeric conflicts, and child-process CLI diagnostics,
+exit codes and output creation. `input/sample.spl` supports the no-argument run.
+The arithmetic, assignment and loop examples declare their variables before the
+first colon; the loop example also initializes its counter.
