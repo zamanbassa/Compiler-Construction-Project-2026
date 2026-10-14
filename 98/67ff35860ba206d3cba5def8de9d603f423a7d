@@ -1,0 +1,31 @@
+src/main/java/spl/semantic/TypeAnalyzer.java
+  h_293a8616118f65 341-411,413,416-473,475,478-496,498,501-519,521,524-534
+test/java/spl/semantic/TypeAnalyzerPhase24Test.java
+  s_4fcb4e89f801ec::t_14319ab872f25b 1-13,32,35,38-65
+  s_4fcb4e89f801ec::t_16d46baf608147 14-31,33-34
+  s_4fcb4e89f801ec::t_f5c66bad82837d 36-37
+src/main/java/spl/Main.java
+  h_293a8616118f65 15-18,40,48,54-58,62-80,85,87,92-94,96-97,99-100,102-106,108-110,112,115-122
+  h_293a8616118f65 61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9867ff35860ba206d3cba5def8de9d603f423a7d",
+  "prompts": {},
+  "humans": {
+    "h_293a8616118f65": {
+      "author": "babychucks <babychucks05@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4fcb4e89f801ec": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "10ee4363-c8ec-4f03-8d0e-b33cf1cef4cf",
+        "model": "unknown"
+      },
+      "human_author": "babychucks <babychucks05@gmail.com>"
+    }
+  }
+}
