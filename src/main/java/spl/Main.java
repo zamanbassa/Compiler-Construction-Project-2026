@@ -15,6 +15,7 @@ import spl.semantic.Phase2aResult;
 import spl.semantic.TypeAnalyzer;
 import spl.semantic.SemanticType;
 import spl.semantic.TypeAnalysisException;
+import spl.semantic.FloatIntegerConflictException;
 
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
@@ -100,6 +101,9 @@ public class Main {
 
         } catch (NameResolutionException e) {
             printError("Semantic Analysis - Declaration Resolution", e);
+
+        } catch (FloatIntegerConflictException e) {
+            printError("Semantic Analysis - Type Checking", e);
 
         } catch (TypeAnalysisException e) {
             printError("Semantic Analysis - Type Checking", e);
