@@ -338,23 +338,200 @@ public final class TypeAnalyzer
 
         private SemanticType typeTerm(TreeNode node)
         {
-            throw notImplemented(node, "2b.4");
+           if (node.getChildren().isEmpty()){
+                throw new TypeAnalysisException(node, "malformed numeric term");
+            }
+
+            List<TreeNode> directTerms = new ArrayList<>();
+            for (TreeNode child : node.getChildren()){
+                if ("TERM".equals(child.getValue())){
+                    directTerms.add(child);
+                }
+            }
+
+            for (TreeNode child : node.getChildren()){
+                if (!child.isTerminal()){
+                    continue;
+                }
+
+                String value = child.getValue();
+                switch (value) {
+                    case "mod":
+                    case "add":
+                    case "sub":
+                    case "mul":
+                    case "div":
+                        if (directTerms.size() != 2){
+                            throw new TypeAnalysisException(node,
+                                "arithmetic operator requires exactly two numeric operands");
+                        }
+                        for (TreeNode term : directTerms){
+                            requireType(term, SemanticType.NUMERIC);
+                        }
+                        return SemanticType.NUMERIC;
+                    case "neg":
+                        if (directTerms.size() != 1){
+                            throw new TypeAnalysisException(node,
+                                "neg requires exactly one numeric operand");
+                        }
+                        requireType(directTerms.get(0), SemanticType.NUMERIC);
+                        return SemanticType.NUMERIC;
+                    default:
+                        break;
+                }
+            }
+
+            if (node.getChildren().size() == 1){
+                TreeNode child = node.getChildren().get(0);
+                if (child.isTerminal()){
+                    if (isNumericLiteral(child.getValue())){
+                        child.setType(SemanticType.NUMERIC);
+                        return SemanticType.NUMERIC;
+                    }
+                    if (child.getValue().startsWith("#")){
+                        Symbol symbol = requireResolvedSymbol(child);
+                        if (symbol.getKind() != SymbolKind.VARIABLE){
+                            throw new TypeAnalysisException(child,
+                                "term reference must resolve to a variable");
+                        }
+                        if (symbol.getType() != SemanticType.NUMERIC){
+                            throw new TypeAnalysisException(child,
+                                "variable is not numeric in this term");
+                        }
+                        child.setType(SemanticType.NUMERIC);
+                        return SemanticType.NUMERIC;
+                    }
+                }
+                else if ("CALL".equals(child.getValue())){
+                    requireType(child, SemanticType.NUMERIC);
+                    return SemanticType.NUMERIC;
+                }
+            }
+
+            throw new TypeAnalysisException(node, "malformed numeric term"); 
         }
+
         private SemanticType typeBool(TreeNode node)
         {
-            throw notImplemented(node, "2b.4");
+            if (node.getChildren().isEmpty()){
+                throw new TypeAnalysisException(node, "malformed boolean expression");
+            }
+
+            for (TreeNode child : node.getChildren()){
+                if (!child.isTerminal()){
+                    continue;
+                }
+
+                String value = child.getValue();
+                switch (value) {
+                    case "not":
+                        TreeNode innerBool = firstChild(node, "BOOL");
+                        if (innerBool == null){
+                            throw new TypeAnalysisException(node,
+                                "not requires one boolean operand");
+                        }
+                        requireType(innerBool, SemanticType.BOOLEAN);
+                        return SemanticType.BOOLEAN;
+                    case "and":
+                    case "or":
+                        List<TreeNode> boolOperands = new ArrayList<>();
+                        for (TreeNode operand : node.getChildren()){
+                            if ("BOOL".equals(operand.getValue())){
+                                boolOperands.add(operand);
+                            }
+                        }
+                        if (boolOperands.size() != 2){
+                            throw new TypeAnalysisException(node,
+                                value + " requires exactly two boolean operands");
+                        }
+                        for (TreeNode operand : boolOperands){
+                            requireType(operand, SemanticType.BOOLEAN);
+                        }
+                        return SemanticType.BOOLEAN;
+                    case "eq":
+                    case "larger":
+                    case "lesser":
+                        List<TreeNode> comparisonTerms = new ArrayList<>();
+                        for (TreeNode operand : node.getChildren()){
+                            if ("TERM".equals(operand.getValue())){
+                                comparisonTerms.add(operand);
+                            }
+                        }
+                        if (comparisonTerms.size() != 2){
+                            throw new TypeAnalysisException(node,
+                                value + " requires exactly two numeric operands");
+                        }
+                        for (TreeNode operand : comparisonTerms){
+                            requireType(operand, SemanticType.NUMERIC);
+                        }
+                        return SemanticType.BOOLEAN;
+                    default:
+                        break;
+                }
+            }
+
+            throw new TypeAnalysisException(node, "malformed boolean expression");     
         }
+
         private SemanticType typeBranch(TreeNode node)
         {
-            throw notImplemented(node, "2b.4");
+            TreeNode condition = firstChild(node, "BOOL");
+            if (condition == null){
+                throw new TypeAnalysisException(node, "branch is missing a boolean condition");
+            }
+            requireType(condition, SemanticType.BOOLEAN);
+
+            List<TreeNode> algorithms = new ArrayList<>();
+            for (TreeNode child : node.getChildren()){
+                if ("ALGO".equals(child.getValue())){
+                    algorithms.add(child);
+                }
+            }
+            if (algorithms.size() != 2){
+                throw new TypeAnalysisException(node, "branch must have exactly two algorithm bodies");
+            }
+            for (TreeNode algorithm : algorithms){
+                requireType(algorithm, SemanticType.OK);
+            }
+            return SemanticType.OK;
         }
+
         private SemanticType typeLoop(TreeNode node)
         {
-            throw notImplemented(node, "2b.4");
+            TreeNode condition = firstChild(node, "COND");
+            if (condition == null){
+                throw new TypeAnalysisException(node, "loop is missing its condition");
+            }
+            requireType(condition, SemanticType.OK);
+
+            TreeNode bool = firstChild(node, "BOOL");
+            if (bool == null){
+                throw new TypeAnalysisException(node, "loop is missing its boolean test");
+            }
+            requireType(bool, SemanticType.BOOLEAN);
+
+            TreeNode algorithm = firstChild(node, "ALGO");
+            if (algorithm == null){
+                throw new TypeAnalysisException(node, "loop is missing its algorithm body");
+            }
+            requireType(algorithm, SemanticType.OK);
+
+            return SemanticType.OK;
         }
+
         private SemanticType typeCond(TreeNode node)
         {
-            throw notImplemented(node, "2b.4");
+            if (node.getChildren().isEmpty()){
+                throw new TypeAnalysisException(node, "malformed loop condition");
+            }
+
+            TreeNode child = node.getChildren().get(0);
+            if (child.isTerminal() && ("while".equals(child.getValue()) || "until".equals(child.getValue()))){
+                child.setType(SemanticType.OK);
+                return SemanticType.OK;
+            }
+
+            throw new TypeAnalysisException(node, "condition must be while or until");
         }
 
 
