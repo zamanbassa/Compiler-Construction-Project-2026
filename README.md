@@ -148,3 +148,10 @@ lookup, name annotations, numeric conflicts, and child-process CLI diagnostics,
 exit codes and output creation. `input/sample.spl` supports the no-argument run.
 The arithmetic, assignment and loop examples declare their variables before the
 first colon; the loop example also initializes its counter.
+
+## Phase 3a code-generation foundation
+
+Issues 3a.1 and 3a.2 provide numeric-mode handoff, validated input, shared translator
+interfaces and a deterministic typed emitter. See [the API guide](docs/phase3a-codegen-api.md)
+for team extension points, scope, examples and test commands. Actual translators and
+CLI target-file integration remain separate issues; Main still emits XML only.
