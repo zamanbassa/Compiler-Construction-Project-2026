@@ -2,6 +2,8 @@ package spl.tree;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import spl.semantic.SemanticType;
 import spl.semantic.Symbol;
 
 public class TreeNode {
@@ -13,6 +15,7 @@ public class TreeNode {
     private final List<TreeNode> children = new ArrayList<>();
     private TreeNode parent;
     private Symbol resolvedSymbol;
+    private SemanticType type = SemanticType.UNKNOWN;
 
     public TreeNode(String value) {
         this(value,false);
@@ -43,6 +46,16 @@ public class TreeNode {
 
     public TreeNode getParent(){
         return parent;
+    }
+
+    /** Type of this syntax node, independent of the declaration symbol type. */
+    public SemanticType getType() {
+        return type;
+    }
+
+    /** Records Phase 2b analysis without changing the Phase 2a symbol binding. */
+    public void setType(SemanticType type) {
+        this.type = Objects.requireNonNull(type, "type");
     }
 
     public Symbol getResolvedSymbol() {

@@ -22,13 +22,13 @@ public class DeclarationResolverTest {
         rejectsDuplicateParameters();
         rejectsDuplicateFunctions();
         preservesLexemesAndGeneratesDeterministicNames();
-        allowsRecursionAndCallsToLaterSiblings();
+        rejectsRecursionAndSiblingCalls();
         resolvesVariableUsesToNearestDeclaration();
         resolvesThroughFunctionAncestorsOnly();
         rejectsUndefinedAndSidewaysVariableUses();
         rejectsUndefinedAndInvalidFunctionCalls();
         rejectsParentCallingChildFunction();
-        resolvesRecursiveFunctionCalls();
+        rejectsRecursiveFunctionCalls();
         registersSiblingFunctionsBeforeBodies();
 
         System.out.println("Declaration resolver tests passed.");
@@ -205,17 +205,11 @@ public class DeclarationResolverTest {
                 .equals(secondParameter.getGeneratedName());
     }
 
-    private static void allowsRecursionAndCallsToLaterSiblings()
-            throws Exception {
-        String source = ": "
-                + "void #f ( ) { : : #f ( ) ; #g ( ) ; return } "
-                + "void #g ( ) { : : return } "
-                + ": ";
-
-        SymbolTable table = resolve(source);
-
-        assert table.getRootScope().lookupLocal("#f").isPresent();
-        assert table.getRootScope().lookupLocal("#g").isPresent();
+    private static void rejectsRecursionAndSiblingCalls() throws Exception {
+        assertUndefined(": void #f ( ) { : : #g ( ) ; return } "
+                + "void #g ( ) { : : #f ( ) ; return } : ");
+        assertUndefined(": void #f ( ) { : : #g ( ) ; return } "
+                + "void #g ( ) { : : return } : ");
     }
 
         private static void resolvesVariableUsesToNearestDeclaration()
@@ -274,16 +268,8 @@ public class DeclarationResolverTest {
                 assert names.get(1).getResolvedSymbol() == declaration;
         }
 
-        private static void resolvesRecursiveFunctionCalls() throws Exception {
-                String source = ": void #f ( ) { : : #f ( ) ; return } : ";
-                TreeNode tree = parse(source);
-                SymbolTable table = new DeclarationResolver().resolve(tree);
-
-                TreeNode callName = findNodes(tree, "#f").get(1);
-                Symbol function = table.getRootScope().lookupLocal("#f")
-                                .orElseThrow();
-
-                assert callName.getResolvedSymbol() == function;
+        private static void rejectsRecursiveFunctionCalls() throws Exception {
+                assertUndefined(": void #f ( ) { : : #f ( ) ; return } : ");
         }
 
         private static void assertUndefined(String source) throws Exception {
