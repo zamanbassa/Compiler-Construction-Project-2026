@@ -163,7 +163,11 @@ public class DeclarationResolver {
 
     private void resolveUsage(TreeNode usageNode, SymbolKind expectedKind) {
         String sourceName = usageNode.getValue();
-        Symbol symbol = symbolTable.resolve(sourceName).orElseThrow(
+        // Functions are visible only in this program's immediate F_DECL.
+        // Variables retain nearest-declaration ancestor lookup.
+        Symbol symbol = (expectedKind == SymbolKind.FUNCTION
+                ? symbolTable.lookupLocal(sourceName)
+                : symbolTable.resolve(sourceName)).orElseThrow(
                 () -> new NameResolutionException(sourceName, expectedKind));
 
         if (symbol.getKind() != expectedKind) {

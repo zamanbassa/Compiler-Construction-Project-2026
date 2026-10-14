@@ -22,6 +22,7 @@ public final class TypeAnalyzer
         {
             throw new TypeAnalysisException("cannot analyze a null syntax tree");
         }
+        ModDivChecker.check(root);
         initializeFunctionTypes(root); //2b.3
         return analyzeNode(root);
     }
@@ -284,6 +285,8 @@ public final class TypeAnalyzer
             throw new TypeAnalysisException(target, "assignment target must be a number");
         }
 
+        target.setType(symbol.getType());
+
         TreeNode term = firstChild(node, "TERM");
         if (term == null){
             throw new TypeAnalysisException(node, "assignment is missing its value");
@@ -316,6 +319,7 @@ public final class TypeAnalyzer
             throw new TypeAnalysisException(name, "function type is not known");
         }
 
+        name.setType(function.getType());
         return function.getType();
 
     }
