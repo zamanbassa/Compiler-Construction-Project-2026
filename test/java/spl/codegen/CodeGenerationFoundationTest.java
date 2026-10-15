@@ -62,6 +62,8 @@ public final class CodeGenerationFoundationTest {
         nativeCheck(fragment);
         termTranslation();
         booleanTranslation();
+        extendedTermTranslation();
+        shortCircuitExecution();
         System.out.println("Code-generation foundation tests passed.");
     }
 
@@ -456,4 +458,111 @@ public final class CodeGenerationFoundationTest {
         }
         return count;
     }
+
+    static void extendedTermTranslation() throws Exception {
+        String[][] cases = {
+            {"sub ( 9 4 )", "5", "WHOLE"},
+            {"mul ( 6 7 )", "42", "WHOLE"},
+            {"mod ( 17 5 )", "2", "WHOLE"},
+            {"div ( 7 2 )", "3.5", "REAL"},
+            {"neg ( 8 )", "-8", "WHOLE"},
+            {"add ( 1.25 2.5 )", "3.75", "REAL"},
+            {"add ( neg ( 3 ) 8 )", "5", "WHOLE"},
+            {"sub ( 2 9 )", "-7", "WHOLE"},
+            {"add ( #x #x )", "12", "WHOLE"},
+            {"mul ( sub ( 10 4 ) add ( 2 3 ) )", "30", "WHOLE"}
+        };
+
+        List<String> functions = new ArrayList<>();
+
+        for (int i = 0; i < cases.length; i++) {
+            String expression = cases[i][0];
+            String expected = cases[i][1];
+            String mode = cases[i][2];
+
+            CodeGenerationInput input = accepted(
+                    "#x : : #x = " + expression + " ; ");
+
+            check(input.getNumericMode().name().equals(mode),
+                    "Incorrect numeric mode for: " + expression);
+
+            TreeNode assignment = find(input.getTree(), "ASSIGN");
+            TreeNode term = find(assignment, "TERM");
+
+            String target = assignment.getChildren().get(0)
+                    .getResolvedSymbol().getGeneratedName();
+
+            AlgorithmCodeGenerator generator
+                    = new AlgorithmCodeGenerator(input);
+
+            generator.emitTerm(term, target);
+
+            String generated = generator.getEmitter().render();
+
+            String cppType = mode.equals("REAL") ? "float" : "int";
+
+            double value = Double.parseDouble(expected);
+            String lower = Double.toString(value - 0.001);
+            String upper = Double.toString(value + 0.001);
+
+            functions.add(
+                    "int spl_eval_" + i + "() {\n"
+                    + cppType + " " + target + " = 0;\n"
+                    + generated
+                    + "return (" + target + " > " + lower
+                    + " && " + target + " < " + upper
+                    + ") ? 1 : 0;\n"
+                    + "}\n"
+            );
+        }
+
+        nativeBooleanCheck(functions, "1".repeat(cases.length));
+
+        System.out.println(
+                "Extended TERM translation tests passed.");
+    }
+
+    static void shortCircuitExecution() throws Exception {
+    
+        String[] expressions = {
+            "and ( eq ( 1 2 ) eq ( 3 3 ) )",
+            "and ( eq ( 1 1 ) eq ( 3 3 ) )",
+            "or ( eq ( 1 1 ) eq ( 3 3 ) )",
+            "or ( eq ( 1 2 ) eq ( 3 3 ) )"
+        };
+
+        List<String> functions = new ArrayList<>();
+
+        for (int i = 0; i < expressions.length; i++) {
+            String generated
+                    = booleanResultFragment(expressions[i]);
+
+            
+            int first = generated.indexOf("if (");
+            int second = generated.indexOf("if (", first + 1);
+
+            check(first >= 0 && second > first,
+                    "Expected two comparison jumps");
+
+            String instrumented
+                    = generated.substring(0, second)
+                    + "spl_rhs_hits++;\n"
+                    + generated.substring(second);
+
+            functions.add(
+                    "int spl_eval_" + i + "() {\n"
+                    + "int spl_bool_result = -1;\n"
+                    + "int spl_rhs_hits = 0;\n"
+                    + instrumented
+                    + "return spl_rhs_hits;\n"
+                    + "}\n"
+            );
+        }
+
+        nativeBooleanCheck(functions, "0101");
+
+        System.out.println(
+                "Short-circuit execution tests passed.");
+    }
+
 }
