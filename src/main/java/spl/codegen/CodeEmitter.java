@@ -67,7 +67,9 @@ public final class CodeEmitter {
         if (comparison == null || comparison.isBlank() || comparison.contains(";")
                 || comparison.contains("\n") || comparison.contains("\r"))
             throw new CodeGenerationException("invalid comparison");
-        referenced.add(label); emitStatement("if (" + comparison + ") goto " + label);
+        // Rejected statements must not leave a phantom jump reference behind.
+        emitStatement("if (" + comparison + ") goto " + label);
+        referenced.add(label);
     }
     /** Returns a fragment, never a main function or source-symbol declarations. */
     public String render() {

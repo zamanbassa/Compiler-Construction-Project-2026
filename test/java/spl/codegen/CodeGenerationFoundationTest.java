@@ -46,6 +46,7 @@ public final class CodeGenerationFoundationTest {
         check(adapter.generate(rootAlgo(empty)).equals(adapter.generate(rootAlgo(empty))), "entry reset");
         check(adapter.generate(rootAlgo(empty)).equals("/* end */\n"), "entry output");
         namesAndFormatting(input);
+        rejectedConditionalJumpPreservesState(input);
         check(new CodeEmitter(real).newTemporary().equals("spl_tmp_0"), "per-run names");
         CodeEmitter re = new CodeEmitter(real); re.newTemporary(); check(re.render().equals("float spl_tmp_0;\n"), "float type");
         String fragment = nestedFragment(input);
@@ -97,6 +98,30 @@ public final class CodeGenerationFoundationTest {
         CodeEmitter quoted = new CodeEmitter(input); quoted.emitStatement("std::cout << \"a;b\"");
         check(quoted.render().contains("a;b"), "quoted semicolon preserved");
         check(nestedFragment(input).equals(nestedFragment(input)), "independent output determinism");
+    }
+    static void rejectedConditionalJumpPreservesState(CodeGenerationInput input) {
+        CodeEmitter emitter = new CodeEmitter(input);
+        emitter.emitComment("existing output");
+        String target = emitter.newLabel();
+        String before = emitter.render();
+        // Passes the comparison guard, but fails emitStatement's quote validation.
+        fails(() -> emitter.emitConditionalGoto("x == \"unterminated", target), "unterminated");
+        check(emitter.render().equals(before), "rejected jump must not change body or references");
+        // A subsequent valid use must still track its target and render normally once defined.
+        emitter.emitConditionalGoto("1 == 1", target);
+        fails(() -> emitter.render(), "undefined");
+        emitter.emitLabel(target);
+        check(emitter.render().equals(before + "if (1 == 1) goto " + target + ";\n"
+                + target + ": ;\n"), "valid emission after recovery");
+        // A failed second jump must not discard an earlier valid target reference either.
+        CodeEmitter pending = new CodeEmitter(input);
+        String valid = pending.newLabel(), rejected = pending.newLabel();
+        pending.emitConditionalGoto("1 == 1", valid);
+        fails(() -> pending.emitConditionalGoto("x == \"unterminated", rejected), "unterminated");
+        fails(() -> pending.render(), "undefined");
+        pending.emitLabel(valid);
+        check(pending.render().equals("if (1 == 1) goto " + valid + ";\n" + valid + ": ;\n"),
+                "only successful jumps should register references");
     }
     static String nestedFragment(CodeGenerationInput input) {
         CodeEmitter e = new CodeEmitter(input);
