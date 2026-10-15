@@ -1,0 +1,14 @@
+test/java/spl/codegen/CodeGenerationFoundationTest.java
+  h_293a8616118f65 65-66,461-567
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3bd38013697eab0399a3fe3a5f802731a5b06098",
+  "prompts": {},
+  "humans": {
+    "h_293a8616118f65": {
+      "author": "babychucks <babychucks05@gmail.com>"
+    }
+  }
+}
