@@ -325,7 +325,7 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
             String temp = emitter.newTemporary();
             emitTerm(term, temp);
-            emitter.emitStatement("std::cout <<" + temp);
+            emitter.emitStatement("std::cout << " + temp);
             return;
         }
 

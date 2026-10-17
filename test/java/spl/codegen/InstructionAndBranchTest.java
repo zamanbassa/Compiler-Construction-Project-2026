@@ -40,7 +40,7 @@ public final class InstructionAndBranchTest {
     private static void assignmentTests() throws Exception{
 
         CodeGenerationInput input = CodeGenerationFoundationTest.accepted(
-            "#x #y : : #x = #7 ; #y = #x ; " + "#x = add ( #x mul ( #y 2 ) ) ; "
+            "#x #y : : #x = 7 ; #y = #x ; " + "#x = add ( #x mul ( #y 2 ) ) ; "
         );
 
         String generated = new TestGenerator(input).generate(CodeGenerationFoundationTest.rootAlgo(input));
@@ -65,7 +65,7 @@ public final class InstructionAndBranchTest {
         check(assignments.size() == 2, "expected assignments in both scopes");
 
         String firstTarget = assignments.get(0).getChildren().get(0).getResolvedSymbol().getGeneratedName();
-        String secondTarget = assignments.get(1).getChildren().get(1).getResolvedSymbol().getGeneratedName();
+        String secondTarget = assignments.get(1).getChildren().get(0).getResolvedSymbol().getGeneratedName();
 
         check(!firstTarget.equals(secondTarget), "shadowed variables should resolve to distinct names");
 
@@ -96,7 +96,7 @@ public final class InstructionAndBranchTest {
         String fragment = new TestGenerator(input).generate(CodeGenerationFoundationTest.rootAlgo(input));
 
         check(fragment.contains("/* else */"), "else should only appear as a comment");
-        check(fragment.contains("else {"), "target code must not contain an else statement");
+        check(!fragment.contains("else {"), "target code must not contain an else statement");
         check(count(fragment,"goto") >= 2, "branch needs explicit jumps");
 
         String functionTrue = function("spl_eval_0", x.getGeneratedName(), 1, fragment);
@@ -128,7 +128,7 @@ public final class InstructionAndBranchTest {
         check(labels.stream().distinct().count() == labels.size(), "nested branch labels must be unique");
 
         CodeGenerationFoundationTest.nativeBooleanCheck(
-            List.of(function("spl_eval_0",x,1,fragment), function("spl_eval_eval_1",x,0,fragment)), "68"
+            List.of(function("spl_eval_0",x,1,fragment), function("spl_eval_1",x,0,fragment)), "68"
         );
     }
 
@@ -167,13 +167,13 @@ public final class InstructionAndBranchTest {
     }
 
     //ALGO traversal only for tests (Phase 3a.8 work)
-    private static final class TestGenerator extends AlgorithmicCodeGenerator{
+    private static final class TestGenerator extends AlgorithmCodeGenerator{
         TestGenerator(CodeGenerationInput input){
             super(input);
         }
 
         @Override
-        public void emitAlgo(TreeNode instruction){
+        public void emitAlgo(TreeNode algo){
 
             require(algo, "ALGO");
 
