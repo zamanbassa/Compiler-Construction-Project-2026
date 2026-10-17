@@ -5,6 +5,7 @@ import spl.semantic.SemanticType;
 import spl.semantic.Symbol;
 import spl.semantic.SymbolKind;
 import spl.tree.TreeNode;
+import java.util.ArrayList;
 
 /**
  * Foundation for issues 3a.3–3a.8. Override hooks as translators are
@@ -313,6 +314,166 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
                 throw new CodeGenerationException(
                         bool, "unsupported BOOL operator: " + operator);
         }
+    }
+
+    protected void emitOutput(TreeNode output){
+
+        require(output, "OUTP");
+        TreeNode term = child(output, "TERM");
+
+        if (term != null){
+
+            String temp = emitter.newTemporary();
+            emitTerm(term, temp);
+            emitter.emitStatement("std::cout << " + temp);
+            return;
+        }
+
+        if (output.getChildren().size() == 1 ){
+
+            TreeNode string = output.getChildren().get(0);
+            if (string.isTerminal() && string.getValue().startsWith("\"") && string.getValue().endsWith("\"")){
+                emitter.emitStatement("std::cout << " + string.getValue());
+                return;
+            }
+        }
+
+        throw new CodeGenerationException(output, "malformed OUTP");
+    }
+
+    protected void emitAssignment(TreeNode assignment){
+
+        require(assignment, "ASSIGN");
+
+        if (assignment.getChildren().isEmpty()){
+            throw new CodeGenerationException(assignment, "malformed ASSIGN");
+        }
+
+        TreeNode target = assignment.getChildren().get(0);
+        Symbol symbol = target.getResolvedSymbol();
+
+        if (symbol == null || symbol.getKind() != SymbolKind.VARIABLE){
+            throw new CodeGenerationException(target, "assignment target must be a variable");
+        }
+
+        if (symbol.getType() != SemanticType.NUMERIC || target.getType() != SemanticType.NUMERIC){
+            throw new CodeGenerationException(target, "assignment target must be NUMERIC");
+        }
+
+        TreeNode term = child(assignment, "TERM");
+        if (term == null || term.getType() != SemanticType.NUMERIC){
+            throw new CodeGenerationException(assignment, "assignment value must be be NUMERIC");
+        }
+
+        String temp = emitter.newTemporary();
+        emitTerm(term, temp);
+        emitter.emitStatement(symbol.getGeneratedName() + " = " + temp);
+
+    }
+
+    protected void emitSimpleInstruction(TreeNode instruction){
+
+        require(instruction, "INSTR");
+
+        TreeNode outp = child(instruction, "OUTP");
+
+        if (outp != null){
+            emitOutput(outp);
+            return;
+        }
+
+        TreeNode assignment = child(instruction, "ASSIGN");
+
+        if (assignment != null){
+            emitAssignment(assignment);
+            return;
+        }
+
+        if (hasToken(instruction, "nop")){
+            emitter.emitComment("nop");
+            return;
+        }
+
+        if (hasToken(instruction, "comment")){
+            
+            TreeNode string = null;
+
+            for (TreeNode child : instruction.getChildren()){
+
+                if (child.isTerminal() && child.getValue().startsWith("\"") && child.getValue().endsWith("\"")){
+                    string = child;
+                    break;
+                }
+            }
+
+            if (string == null){
+                throw new CodeGenerationException(instruction, "comment is missing its STRING");
+            }
+
+            emitter.emitComment(string.getValue());
+            return;
+        }
+
+        throw new CodeGenerationException(instruction, "instruction is not handled by this translator");
+
+    }
+
+    public void emitBranch(TreeNode branch){
+
+        require(branch, "BRANCH");
+
+        TreeNode condition = child(branch, "BOOL");
+        List<TreeNode> algorithms = new ArrayList<>();
+
+        for (TreeNode child : branch.getChildren()){
+            if ("ALGO".equals(child.getValue())){
+                algorithms.add(child);
+            }
+        }
+
+        if (condition == null || algorithms.size() != 2){
+            throw new CodeGenerationException(branch, "malformed BRANCH");
+        }
+
+        TreeNode trueAlgo = algorithms.get(0);
+        TreeNode falseAlgo = algorithms.get(1);
+
+        String trueLabel = emitter.newLabel();
+        String falseLabel = emitter.newLabel();
+        String doneLabel = emitter.newLabel();
+
+        emitter.emitComment("if");
+        emitBool(condition, trueLabel, falseLabel);
+
+        emitter.emitLabel(falseLabel);
+        emitter.emitComment("else");
+        emitAlgo(falseAlgo);
+        emitter.emitGoto(doneLabel);
+
+        emitter.emitLabel(trueLabel);
+        emitter.emitComment("then");
+        emitAlgo(trueAlgo);
+
+        emitter.emitLabel(doneLabel);
+        emitter.emitComment("continue");
+    }
+
+    private TreeNode child(TreeNode node, String value){
+        for (TreeNode n : node.getChildren()){
+            if (value.equals(n.getValue())){
+                return n;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasToken(TreeNode node, String value){
+        for (TreeNode n : node.getChildren()){
+            if (n.isTerminal() && value.equals(n.getValue())){
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isToken(TreeNode node, String value) {
