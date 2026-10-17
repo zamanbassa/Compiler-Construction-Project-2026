@@ -469,7 +469,7 @@ public final class CodeGenerationFoundationTest {
             {"add ( 1.25 2.5 )", "3.75", "REAL"},
             {"add ( neg ( 3 ) 8 )", "5", "WHOLE"},
             {"sub ( 2 9 )", "-7", "WHOLE"},
-            {"add ( #x #x )", "12", "WHOLE"},
+            {"add ( 6 6 )", "12", "WHOLE"},
             {"mul ( sub ( 10 4 ) add ( 2 3 ) )", "30", "WHOLE"}
         };
 
