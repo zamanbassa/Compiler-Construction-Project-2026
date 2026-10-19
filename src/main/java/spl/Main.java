@@ -1,6 +1,12 @@
 package spl;
 
 import java.nio.file.Files;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import spl.codegen.CodeGenerationException;
+import spl.codegen.CodeGenerationInput;
+import spl.codegen.TargetFileOutput;
+import spl.semantic.Phase2bResult;
 import java.nio.file.Paths;
 import java.util.List;
 import spl.lexer.Lexer;
@@ -23,13 +29,15 @@ import spl.tree.TreeNode;
 public class Main {
     public static void main(String[] args) {
         try {
-            if (args.length > 2) {
+            if (args.length > 3) {
                 throw new IllegalArgumentException(
-                        "Usage: java spl.Main [input-file] [output-xml-file]");
+                        "Usage: java spl.Main [input-file] [output-xml-file] [output-target-file]");
             }
 
             String inputPath = args.length > 0 ? args[0] : "input/sample.spl";
             String outputPath = args.length > 1 ? args[1] : "output/tree.xml";
+            TargetFileOutput target = args.length > 2
+                    ? new TargetFileOutput(Paths.get(inputPath), Paths.get(outputPath), Paths.get(args[2])) : null;
             String sourceCode = Files.readString(Paths.get(inputPath));
             System.out.println("=== Source Code ===");
             System.out.println(sourceCode);
@@ -66,8 +74,8 @@ public class Main {
             TypeAnalyzer typeAnalyzer =
                 new TypeAnalyzer(phase2aResult.getSymbolTable());
 
-            SemanticType programType =
-                typeAnalyzer.analyze(resolvedTree);
+            Phase2bResult checked = typeAnalyzer.analyzeWithResult(phase2aResult);
+            SemanticType programType = checked.getTree().getType();
 
             if (programType != SemanticType.OK) {
                 throw new TypeAnalysisException(
@@ -88,6 +96,11 @@ public class Main {
             System.out.println("XML tree written to " + outputPath);
             System.out.println();
 
+            if (target != null) {
+                System.out.println("=== Code Generation: Phase 3a ===");
+                target.write(new CodeGenerationInput(checked));
+                System.out.println("Target fragment written to " + args[2]);
+            }
             System.out.println("=== Compilation Successful ===");
 
         }  catch (LexicalException e) {
@@ -107,6 +120,18 @@ public class Main {
 
         } catch (TypeAnalysisException e) {
             printError("Semantic Analysis - Type Checking", e);
+
+        } catch (CodeGenerationException e) {
+            printError("Code Generation", e);
+
+        } catch (UncheckedIOException e) {
+            printError("File I/O", e);
+
+        } catch (IOException e) {
+            printError("File I/O", e);
+
+        } catch (IllegalArgumentException e) {
+            printError("Command Line", e);
 
         } catch (Exception e) {
             System.err.println();

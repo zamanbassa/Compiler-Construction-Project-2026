@@ -148,3 +148,18 @@ lookup, name annotations, numeric conflicts, and child-process CLI diagnostics,
 exit codes and output creation. `input/sample.spl` supports the no-argument run.
 The arithmetic, assignment and loop examples declare their variables before the
 first colon; the loop example also initializes its counter.
+
+## Phase 3a code-generation foundation
+
+Issues 3a.1 and 3a.2 provide numeric-mode handoff, validated input, shared translator
+interfaces and a deterministic typed emitter. See [the API guide](docs/phase3a-codegen-api.md)
+for team extension points, scope, examples and test commands. The instruction translators and optional target-file integration are now implemented.
+Zero to two CLI arguments retain XML-only behavior; a third path requests a target fragment.
+
+## Phase 3a integration and verification
+
+Generate a fragment alongside XML: `java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml output/algorithm.cpp`.
+Run `java -ea -cp out/classes spl.codegen.Phase3aEndToEndTest` after compiling production and test sources.
+See [the Phase 3a guide](docs/phase3a-codegen-api.md) for safety, supported grammar, numeric policy,
+full-suite commands, native compiler setup and explicit skip semantics. Target files are fragments,
+not complete programs; declarations/functions/inlining/full wrappers remain Phase 3b.

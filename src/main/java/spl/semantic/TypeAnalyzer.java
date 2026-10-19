@@ -27,6 +27,28 @@ public final class TypeAnalyzer
         return analyzeNode(root);
     }
 
+    /** Analyze once, retaining the Phase 2a identity and exporting numeric mode. */
+    public Phase2bResult analyzeWithResult(Phase2aResult input) {
+        if (input == null || input.getSymbolTable() != symbolTable) {
+            throw new TypeAnalysisException("handoff must use this analyzer's original symbol table");
+        }
+        TreeNode tree = input.getResolvedTree();
+        if (analyze(tree) != SemanticType.OK) {
+            throw new TypeAnalysisException("program must be OK before code generation");
+        }
+        // Global conflicts were already checked by analyze(). Decimal/div imply REAL;
+        // mod implies WHOLE. Unconstrained integer-only programs default to WHOLE.
+        return new Phase2bResult(tree, symbolTable, requiresReal(tree)
+                ? NumericMode.REAL : NumericMode.WHOLE);
+    }
+
+    private boolean requiresReal(TreeNode node) {
+        if (node.isTerminal() && ("div".equals(node.getValue())
+                || node.getValue().matches("-?[0-9]+\\.[0-9]+"))) return true;
+        for (TreeNode child : node.getChildren()) if (requiresReal(child)) return true;
+        return false;
+    }
+
     private void initializeFunctionTypes(TreeNode node){
 
         if ("F_TYPE".equals(node.getValue()) && node.getChildren().size() >= 2){
