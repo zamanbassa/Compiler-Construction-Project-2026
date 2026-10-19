@@ -7,11 +7,7 @@ import spl.semantic.SymbolKind;
 import spl.tree.TreeNode;
 import java.util.ArrayList;
 
-/**
- * Foundation for issues 3a.3–3a.8. Override hooks as translators are
- * implemented. This class deliberately does not pretend to translate
- * unimplemented productions.
- */
+/** Phase 3a fragment translator: algorithms, terms, instructions, conditions and loops. */
 public class AlgorithmCodeGenerator implements CodeGenerator {
 
     protected final CodeGenerationInput input;
@@ -52,12 +48,30 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
     @Override
     public void emitAlgo(TreeNode algo) {
-        unsupported(algo, "ALGO");
+        require(algo, "ALGO");
+        // Iterative traversal avoids a Java stack frame per source instruction.
+        TreeNode current = algo;
+        while (true) {
+            List<TreeNode> children = current.getChildren();
+            if (children.isEmpty()) { emitter.emitComment("end"); return; }
+            if (children.size() != 3 || !"INSTR".equals(children.get(0).getValue())
+                    || !isToken(children.get(1), ";") || !"ALGO".equals(children.get(2).getValue()))
+                throw new CodeGenerationException(current, "malformed ALGO production");
+            emitInstruction(children.get(0));
+            current = children.get(2);
+        }
     }
 
     @Override
     public void emitInstruction(TreeNode instruction) {
-        unsupported(instruction, "INSTR");
+        require(instruction, "INSTR");
+        if (instruction.getType() != SemanticType.OK)
+            throw new CodeGenerationException(instruction, "INSTR must have type OK");
+        TreeNode branch = child(instruction, "BRANCH");
+        TreeNode loop = child(instruction, "LOOP");
+        if (branch != null) emitBranch(branch);
+        else if (loop != null) emitLoop(loop);
+        else emitSimpleInstruction(instruction);
     }
 
     @Override
@@ -395,7 +409,7 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
         }
 
         if (hasToken(instruction, "comment")){
-            
+
             TreeNode string = null;
 
             for (TreeNode child : instruction.getChildren()){
@@ -457,6 +471,71 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
         emitter.emitLabel(doneLabel);
         emitter.emitComment("continue");
     }
+
+    // Translate one LOOP node into labelled jumps
+    public void emitLoop(TreeNode loop) {
+        require(loop, "LOOP");
+
+        List<TreeNode> children = loop.getChildren();
+        boolean preTest = !children.isEmpty()
+                && "COND".equals(children.get(0).getValue());
+
+        TreeNode cond = child(loop, "COND");
+        TreeNode bool = child(loop, "BOOL");
+        TreeNode algo = child(loop, "ALGO");
+        if (cond == null || bool == null || algo == null) {
+            throw new CodeGenerationException(loop, "malformed LOOP production");
+        }
+        if (bool.getType() != SemanticType.BOOLEAN) {
+            throw new CodeGenerationException(bool, "loop condition must be BOOLEAN");
+        }
+
+        String kind = cond.getChildren().isEmpty()
+                ? "" : cond.getChildren().get(0).getValue();
+        if (!"while".equals(kind) && !"until".equals(kind)) {
+            throw new CodeGenerationException(cond, "COND must be while or until");
+        }
+
+        if (preTest) {
+            emitPreTest(kind, bool, algo);
+        } else {
+            emitPostTest(kind, bool, algo);
+        }
+    }
+
+    // Pre-test until exit when true while: same skeleton, labels swapped
+    private void emitPreTest(String kind, TreeNode bool, TreeNode algo) {
+        String top  = emitter.newLabel();
+        String body = emitter.newLabel();
+        String exit = emitter.newLabel();
+
+        emitter.emitLabel(top);
+        if ("until".equals(kind)) {
+            emitBool(bool, exit, body);
+        } else {
+            emitBool(bool, body, exit);
+        }
+        emitter.emitLabel(body);
+        emitAlgo(algo);
+        emitter.emitGoto(top);
+        emitter.emitLabel(exit);
+    }
+
+    // Post-test do-while: repeat when true do-until: same skeleton, labels swapped
+    private void emitPostTest(String kind, TreeNode bool, TreeNode algo) {
+        String top  = emitter.newLabel();
+        String exit = emitter.newLabel();
+
+        emitter.emitLabel(top);
+        emitAlgo(algo);
+        if ("while".equals(kind)) {
+            emitBool(bool, top, exit);
+        } else {
+            emitBool(bool, exit, top);
+        }
+        emitter.emitLabel(exit);
+    }
+
 
     private TreeNode child(TreeNode node, String value){
         for (TreeNode n : node.getChildren()){
