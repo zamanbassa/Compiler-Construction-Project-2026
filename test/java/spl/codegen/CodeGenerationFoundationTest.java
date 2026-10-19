@@ -38,7 +38,7 @@ public final class CodeGenerationFoundationTest {
         CodeGenerationInput call = accepted(": void #f ( ) { : : return } : #f ( ) ; ");
         fails(() -> new AlgorithmCodeGenerator(call).generate(rootAlgo(call)), "Phase 3b");
         AlgorithmCodeGenerator absent = new AlgorithmCodeGenerator(input);
-        fails(() -> absent.generate(rootAlgo(input)), "translator not installed");
+        check(absent.generate(rootAlgo(input)).contains(" = 1;"), "integrated ALGO translation");
         fails(() -> absent.generate(new TreeNode("ALGO")), "accepted tree");
         fails(() -> absent.generate(input.getTree()), "expected ALGO");
         // A small test-only adapter proves the public entry point without implementing issue 8.
