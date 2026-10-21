@@ -1,0 +1,18 @@
+src/main/java/spl/Main.java
+  h_293a8616118f65 5-7,18,21,24,99,101
+src/main/java/spl/codegen/ProgramCodeGenerator.java
+  h_293a8616118f65 1-182
+src/main/java/spl/codegen/TargetFileOutput.java
+  h_293a8616118f65 37,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61886370626c9ce9ec043f6351313be4ded81dbc",
+  "prompts": {},
+  "humans": {
+    "h_293a8616118f65": {
+      "author": "babychucks <babychucks05@gmail.com>"
+    }
+  }
+}
