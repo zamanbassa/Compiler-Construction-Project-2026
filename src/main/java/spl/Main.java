@@ -1,14 +1,13 @@
 package spl;
 
-import java.nio.file.Files;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import spl.codegen.CodeGenerationException;
 import spl.codegen.CodeGenerationInput;
 import spl.codegen.TargetFileOutput;
-import spl.semantic.Phase2bResult;
-import java.nio.file.Paths;
-import java.util.List;
 import spl.lexer.Lexer;
 import spl.lexer.LexicalException;
 import spl.lexer.Token;
@@ -16,13 +15,13 @@ import spl.parser.Parser;
 import spl.parser.SyntaxError;
 import spl.semantic.DeclarationResolver;
 import spl.semantic.DuplicateDeclarationException;
+import spl.semantic.FloatIntegerConflictException;
 import spl.semantic.NameResolutionException;
 import spl.semantic.Phase2aResult;
-import spl.semantic.TypeAnalyzer;
+import spl.semantic.Phase2bResult;
 import spl.semantic.SemanticType;
 import spl.semantic.TypeAnalysisException;
-import spl.semantic.FloatIntegerConflictException;
-
+import spl.semantic.TypeAnalyzer;
 import spl.tree.TreeBuilder;
 import spl.tree.TreeNode;
 
@@ -97,9 +96,9 @@ public class Main {
             System.out.println();
 
             if (target != null) {
-                System.out.println("=== Code Generation: Phase 3a ===");
+                System.out.println("=== Code Generation: Phase 3 ===");
                 target.write(new CodeGenerationInput(checked));
-                System.out.println("Target fragment written to " + args[2]);
+                System.out.println("C++ translation unit written to " + args[2]);
             }
             System.out.println("=== Compilation Successful ===");
 
