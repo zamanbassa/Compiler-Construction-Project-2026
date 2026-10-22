@@ -224,8 +224,9 @@ public final class ProgramCodeGeneratorTest {
                 .matcher(calcTemplate);
         check(returnSlotMatcher.find(),
                 "numeric template should render a typed return slot");
-
         String returnSlot = returnSlotMatcher.group(1);
+        check(returnSlot.startsWith(calcName + "_return_"), "numeric return slot should include its function name");
+
         String localName = calc.getLocals().get(0).getGeneratedName();
         int localAssignment = calcTemplate.indexOf(localName + " =");
         int returnAssignment = calcTemplate.indexOf(returnSlot + " =");

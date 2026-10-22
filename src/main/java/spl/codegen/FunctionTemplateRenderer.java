@@ -59,48 +59,35 @@ public final class FunctionTemplateRenderer{
             input.requireNode(declaration, "F_TYPE");
             FunctionCatalogue.Function function = functionForDeclaration(declaration);
 
-            appendTemplate(output, buildTemplate(function));
+            output.append(renderTemplate(buildTemplate(function)));
             current = children.get(1);
             hasFunctions = true;
         }
         return hasFunctions ? output.toString() : " ";
     }
 
-    private RenderedTemplate buildTemplate(FunctionCatalogue.Function function){
+    private FunctionTemplate buildTemplate(FunctionCatalogue.Function function){
 
-        String returnSlot = null;
-        if (function.getReturnTerm().isPresent()){
-            returnSlot = allocateReturnSlot(function);
-        }
+        String returnSlot = function.getReturnTerm().isPresent() ? allocateReturnSlot(function) : null;
 
-        List<RenderedTemplate> nestedTemplates = new ArrayList<>();
+        List<FunctionTemplate> nestedTemplates = new ArrayList<>();
+
         for (TreeNode nestedDeclaration : function.getNestedDeclarations()){
             nestedTemplates.add(
                 buildTemplate(functionForDeclaration(nestedDeclaration))
             );
         }
 
-        AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input);
-        generator.emitAlgo(function.getAlgorithm());
-
-        if (function.getReturnTerm().isPresent()){
-            generator.emitTerm(function.getReturnTerm().get(), returnSlot);
-        }
-
-        String bodyCode = generator.getEmitter().render();
-
-        return new RenderedTemplate(
-            function, input.getNumericMode().getTargetType(),declarations(function.getParameters()), declarations(function.getLocals()),
-            returnSlot, bodyCode, nestedTemplates
-        );
+        return new FunctionTemplate(function, returnSlot, nestedTemplates);
     }
 
     private String allocateReturnSlot(FunctionCatalogue.Function function){
 
+        String prefix = function.getSymbol().getGeneratedName() + "_return_";
         String slot;
         
         do{
-            slot = "spl_return_" + returnSlotCounter++;
+            slot = prefix + returnSlotCounter++;
         }
         while (!usedReturnSlots.add(slot));
         
@@ -157,10 +144,6 @@ public final class FunctionTemplateRenderer{
         return found;
     }
 
-    private static void appendTemplate( StringBuilder output, RenderedTemplate template){
-        output.append(template.toDisplayText());
-    }
-
     //escapes the display payload before it is placed inside the outer comment
     public static String serializeOuterComment(String payload){
 
@@ -174,81 +157,75 @@ public final class FunctionTemplateRenderer{
         + LINE_END + "end of the non-executable code-mine */";
     }
 
-    private static final class RenderedTemplate{
+    private String renderTemplate(FunctionTemplate template){
+
+        FunctionCatalogue.Function function = template.function;
+        boolean numeric = function.getReturnTerm().isPresent();
+        String functionName = function.getSymbol().getGeneratedName();
+
+        StringBuilder output = new StringBuilder();
+        if (numeric){
+            output.append("begin of code-mine for Function ").append(functionName).append(LINE_END);
+        }
+        else{
+            output.append("begin of code-mine for void-procedure ").append(functionName).append(LINE_END);
+        }
+
+        output.append("Parameters for inlining:").append(LINE_END)
+        .append(declarations(function.getParameters()))
+        .append(LINE_END)
+        .append("Body of the procedure:").append(LINE_END);
+
+        if (template.returnSlot != null){
+            output.append("Return slot: ")
+            .append(input.getNumericMode().getTargetType())
+            .append(' ').append(template.returnSlot)
+            .append(';').append(LINE_END);
+        }
+
+        output.append(declarations(function.getLocals())).append(LINE_END);
+
+        for (FunctionTemplate nested : template.nestedTemplates){
+            output.append(renderTemplate(nested));
+        }
+
+        AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input);
+        generator.emitAlgo(function.getAlgorithm());
+        if (numeric){
+            generator.emitTerm(function.getReturnTerm().orElseThrow(), template.returnSlot);
+        }
+
+        String bodyCode = generator.getEmitter().render().replace("\r\n", "\n").replace('\r','\n')
+        .replace("\n", LINE_END);
+        output.append(bodyCode);
+
+        if (!bodyCode.endsWith(LINE_END)){
+            output.append(LINE_END);
+        }
+
+        if (numeric){
+            output.append("end of code-mine for Function ").append(functionName).append(LINE_END)
+            .append("The result is found in the return value ").append(template.returnSlot).append(LINE_END);
+        }
+        else{
+            output.append("end of code-mine for void-procedure ").append(functionName).append(LINE_END);
+        }
+
+        return output.toString();
+    }
+
+    private static final class FunctionTemplate{
 
         private final FunctionCatalogue.Function function;
-        private final String targetType;
-        private final String parameterDeclarations;
-        private final String localDeclarations;
         private final String returnSlot;
-        private final String bodyCode;
-        private final List<RenderedTemplate> nestedTemplates;
+        private final List<FunctionTemplate> nestedTemplates;
 
-        private RenderedTemplate(
-            FunctionCatalogue.Function function,
-            String targetType,
-            String parameterDeclarations,
-            String localDeclarations,
-            String returnSlot,
-            String bodyCode,
-            List<RenderedTemplate> nestedTemplates
+        private FunctionTemplate(
+            FunctionCatalogue.Function function, String returnSlot, List<FunctionTemplate> nestedTemplates
         ){
             this.function = function;
-            this.parameterDeclarations = parameterDeclarations;
-            this.localDeclarations = localDeclarations;
             this.returnSlot = returnSlot;
-            this.bodyCode = bodyCode;
             this.nestedTemplates = List.copyOf(nestedTemplates);
-            this.targetType = targetType;
-        }
-
-        private String toDisplayText(){
-            StringBuilder output = new StringBuilder();
-            boolean numeric = function.getReturnTerm().isPresent();
-            String functionName = function.getSymbol().getGeneratedName();
-
-            if (numeric){
-                output.append("begin of code-mine for Function ").append(functionName).append(LINE_END);
-            }
-            else{
-                output.append("begin of code-mine for void-procedure ").append(functionName).append(LINE_END);
-            }
-
-            output.append("Parameters for inlining:").append(LINE_END).append(parameterDeclarations).append(LINE_END)
-            .append("Body of the procedure:").append(LINE_END);
-
-            if (returnSlot != null){
-                output.append("Return slot: ").append(functionType()).append(' ').append(returnSlot)
-                .append(';').append(LINE_END);
-            }
-
-            output.append(localDeclarations).append(LINE_END);
-
-            for (RenderedTemplate nested : nestedTemplates){
-                output.append(nested.toDisplayText());
-            }
-
-            String normalizedBodyCode = bodyCode.replace("\r\n", "\n").replace('\r','\n').replace("\n", LINE_END);
-            
-            output.append(normalizedBodyCode);
-
-            if (!normalizedBodyCode.endsWith(LINE_END)){
-                output.append(LINE_END);
-            }
-
-            if (numeric){
-                output.append("end of code-mine for Function ").append(functionName).append(LINE_END)
-                .append("The result is found in the return value ").append(returnSlot).append(LINE_END);
-            }
-            else{
-                output.append("end of code-mine for void-procedure ").append(functionName).append(LINE_END);
-            }
-
-            return output.toString();
-        }
-
-        private String functionType(){
-            return targetType;
         }
     }
 }
