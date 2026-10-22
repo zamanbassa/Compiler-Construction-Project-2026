@@ -27,9 +27,9 @@ public final class ProgramCodeGeneratorTest {
     private static final String CRLF = "\r\n";
 
     private static final String CODE_MINE_BEGIN
-            = "/* begin of the non-executable code-mine for later inlining */";
+            = "/* begin of the non-executable code-mine for later inlining";
     private static final String CODE_MINE_END
-            = "/* end of the non-executable code-mine */";
+            = "end of the non-executable code-mine */";
     private static final String EXECUTABLE_BEGIN
             = "/* begin of executable C code */";
     private static final String EXECUTABLE_END
@@ -44,10 +44,11 @@ public final class ProgramCodeGeneratorTest {
         testEmptyProgramAndEpsilonDeclarations();
         testWholeVariableDeclarationsAndNames();
         testRealVariableDeclarations();
-        testDeferredFunctionTemplatesDoNotAddWrappers();
+        testFunctionTemplatesAreRenderedAsComments();
         testExistingAlgorithmTranslationAndTemporaryOrdering();
         testTargetFileOutputIntegration();
         testNativeCompilationAndExecution();
+        testNestedFunctionTemplatesAreRenderedRecursively();
 
         System.out.println("Phase 3b.2 program-generation tests passed.");
     }
@@ -156,6 +157,106 @@ public final class ProgramCodeGeneratorTest {
                 "top-level ALGO should still be translated");
         checkWrapperStructure(output);
     }
+
+    private static void testFunctionTemplatesAreRenderedAsComments() throws Exception {
+        
+        CodeGenerationInput input = accepted(
+                "#outer : "
+                + "void #idle ( #arg ) { "
+                + "#local : : comment \"inside\" ; nop ; return } "
+                + "num #calc ( #value ) { "
+                + "#result : : #result = add ( #value 1 ) ; "
+                + "return ( add ( #result #outer ) ) } "
+                + "void #empty ( ) { : : return } "
+                + ": ");
+
+        String output = new ProgramCodeGenerator(input).generate();
+        FunctionCatalogue catalogue = new FunctionCatalogue(input);
+
+        check(catalogue.getFunctions().size() == 3,
+                "catalogue should contain all declared functions");
+
+        String codeMine = output.substring(
+                output.indexOf(CODE_MINE_BEGIN),
+                output.indexOf(CODE_MINE_END) + CODE_MINE_END.length());
+
+        FunctionCatalogue.Function idle = catalogue.getFunctions().get(0);
+        FunctionCatalogue.Function calc = catalogue.getFunctions().get(1);
+        FunctionCatalogue.Function empty = catalogue.getFunctions().get(2);
+
+        String idleName = idle.getSymbol().getGeneratedName();
+        String calcName = calc.getSymbol().getGeneratedName();
+        String emptyName = empty.getSymbol().getGeneratedName();
+
+        int idleStart = codeMine.indexOf(
+                "begin of code-mine for void-procedure " + idleName);
+        int calcStart = codeMine.indexOf(
+                "begin of code-mine for Function " + calcName);
+        int emptyStart = codeMine.indexOf(
+                "begin of code-mine for void-procedure " + emptyName);
+
+        check(idleStart >= 0 && calcStart > idleStart && emptyStart > calcStart,
+                "function templates should appear in declaration order");
+
+        String idleTemplate = codeMine.substring(
+                idleStart,
+                codeMine.indexOf(
+                        "end of code-mine for void-procedure " + idleName,
+                        idleStart));
+
+        check(idleTemplate.contains(
+                        "int " + idle.getParameters().get(0).getGeneratedName() + ";"),
+                "void template should render its parameter declaration");
+        check(idleTemplate.contains(
+                        "int " + idle.getLocals().get(0).getGeneratedName() + ";"),
+                "void template should render its local declaration");
+        check(!idleTemplate.contains("Return slot:"),
+                "void template must not have a return slot");
+
+        String calcTemplate = codeMine.substring(
+                calcStart,
+                codeMine.indexOf(
+                        "end of code-mine for Function " + calcName,
+                        calcStart));
+
+        Matcher returnSlotMatcher = Pattern.compile(
+                "Return slot: int ([A-Za-z_][A-Za-z0-9_]*);")
+                .matcher(calcTemplate);
+        check(returnSlotMatcher.find(),
+                "numeric template should render a typed return slot");
+        String returnSlot = returnSlotMatcher.group(1);
+        check(returnSlot.startsWith(calcName + "_return_"), "numeric return slot should include its function name");
+
+        String localName = calc.getLocals().get(0).getGeneratedName();
+        int localAssignment = calcTemplate.indexOf(localName + " =");
+        int returnAssignment = calcTemplate.indexOf(returnSlot + " =");
+
+        check(localAssignment >= 0 && returnAssignment > localAssignment,
+                "numeric return TERM should be emitted after the function body");
+        check(codeMine.contains(
+                        "The result is found in the return value " + returnSlot),
+                "numeric template should identify its return value");
+
+        check(count(codeMine, "*/") == 1,
+                "only the outer code-mine comment may contain a comment terminator");
+        check(count(output, "#include <iostream>") == 1,
+                "function templates must not add another include");
+        check(countMatches(output, "\\bint\\s+main\\s*\\(") == 1,
+                "function templates must not add another main function");
+        check(count(output, "return 0;") == 1,
+                "function templates must not add an executable return statement");
+        check(!stripCommentsAndStrings(output).contains("begin of code-mine"),
+                "template metadata must remain inside the outer comment");
+
+        String serialized = FunctionTemplateRenderer.serializeOuterComment(
+                "before */ after");
+        check(serialized.contains("before * / after"),
+                "outer-comment serialization should escape embedded terminators");
+        check(count(serialized, "*/") == 1,
+                "serialized payload should have exactly one comment terminator");
+
+        checkWrapperStructure(output);
+        }
 
     private static void testExistingAlgorithmTranslationAndTemporaryOrdering()
             throws Exception {
@@ -526,4 +627,64 @@ public final class ProgramCodeGeneratorTest {
             this.expected = expected;
         }
     }
+
+    private static void testNestedFunctionTemplatesAreRenderedRecursively() throws Exception {
+
+        CodeGenerationInput input = accepted(
+                "#outer : "
+                + "void #parent ( #parentarg ) { "
+                + ": "
+                + "num #child ( #childarg ) { "
+                + ": : return ( add ( #childarg #parentarg ) ) "
+                + "} "
+                + ": return } "
+                + "void #sibling ( ) { : : return } "
+                + ": ");
+
+        String output = new ProgramCodeGenerator(input).generate();
+        FunctionCatalogue catalogue = new FunctionCatalogue(input);
+
+        check(catalogue.getFunctions().size() == 3,
+                "catalogue should include the parent, nested child, and sibling");
+
+        FunctionCatalogue.Function parent = catalogue.getFunctions().get(0);
+        FunctionCatalogue.Function child = catalogue.getFunctions().get(1);
+        FunctionCatalogue.Function sibling = catalogue.getFunctions().get(2);
+
+        String codeMine = output.substring(
+                output.indexOf(CODE_MINE_BEGIN),
+                output.indexOf(CODE_MINE_END) + CODE_MINE_END.length());
+
+        String parentName = parent.getSymbol().getGeneratedName();
+        String childName = child.getSymbol().getGeneratedName();
+        String siblingName = sibling.getSymbol().getGeneratedName();
+
+        int parentStart = codeMine.indexOf(
+                "begin of code-mine for void-procedure " + parentName);
+        int childStart = codeMine.indexOf(
+                "begin of code-mine for Function " + childName);
+        int parentEnd = codeMine.indexOf(
+                "end of code-mine for void-procedure " + parentName,
+                parentStart);
+        int siblingStart = codeMine.indexOf(
+                "begin of code-mine for void-procedure " + siblingName);
+
+        check(parentStart >= 0,
+                "parent template should be rendered");
+        check(childStart > parentStart && childStart < parentEnd,
+                "nested child template should be rendered inside its parent entry");
+        check(siblingStart > parentEnd,
+                "following top-level sibling should render after the parent entry");
+
+        String childTemplate = codeMine.substring(childStart, parentEnd);
+        String parentParameter = parent.getParameters().get(0).getGeneratedName();
+        String childParameter = child.getParameters().get(0).getGeneratedName();
+
+        check(childTemplate.contains("int " + childParameter + ";"),
+                "nested template should render its parameter declaration");
+        check(childTemplate.contains(parentParameter),
+                "nested numeric return should retain its outer-variable reference");
+        check(child.getReturnTerm().isPresent(),
+                "nested numeric function should retain its return term");
+        }
 }

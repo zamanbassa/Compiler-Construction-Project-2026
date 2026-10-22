@@ -56,16 +56,16 @@ public final class ProgramCodeGenerator {
         TreeNode algorithm = children.get(4);
 
         String functionDeclarationTranslation =
-                translateFunctionDeclarations(functionDeclarations);
+                new FunctionTemplateRenderer(input).renderCodeMine();
         String variableDeclarationTranslation =
                 generateVariableDeclarations(variableDeclarations);
         String algorithmTranslation =
                 new AlgorithmCodeGenerator(input).generate(algorithm);
 
         StringBuilder output = new StringBuilder();
-        appendLine(output, CODE_MINE_BEGIN);
-        output.append(functionDeclarationTranslation).append(LINE_END);
-        appendLine(output, CODE_MINE_END);
+        output.append(FunctionTemplateRenderer.serializeOuterComment(
+            functionDeclarationTranslation
+        )).append(LINE_END);
         appendLine(output, EXECUTABLE_BEGIN);
         appendLine(output, "#include <iostream>");
         appendLine(output, "int main() {");
