@@ -34,12 +34,12 @@ public final class TargetFileOutput {
         return algo;
     }
     public void write(CodeGenerationInput input) throws IOException {
-        String fragment = new AlgorithmCodeGenerator(input).generate(mainAlgorithm(input));
+        String translationUnit = new ProgramCodeGenerator(input).generate();
         Path parent = target.getParent();
         Files.createDirectories(parent);
         Path temporary = Files.createTempFile(parent, ".spl-target-", ".tmp");
         try {
-            Files.writeString(temporary, fragment, StandardCharsets.UTF_8);
+            Files.writeString(temporary, translationUnit, StandardCharsets.UTF_8);
             try { Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
             catch (AtomicMoveNotSupportedException unsupported) {
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
