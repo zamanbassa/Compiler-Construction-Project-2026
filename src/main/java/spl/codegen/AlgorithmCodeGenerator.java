@@ -12,19 +12,43 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
     protected final CodeGenerationInput input;
     protected final CodeEmitter emitter;
+    private final InliningContract.LexicalEnvironment environment;
+    private final boolean ownsEmitter;
 
     public AlgorithmCodeGenerator(CodeGenerationInput input) {
+        this(input, new CodeEmitter(input), new RootEnvironment(), true);
+    }
+
+    AlgorithmCodeGenerator(CodeGenerationInput input, CodeEmitter emitter,
+                           InliningContract.LexicalEnvironment environment) {
+        this(input, emitter, environment, false);
+    }
+
+    private AlgorithmCodeGenerator(CodeGenerationInput input, CodeEmitter emitter,
+                                   InliningContract.LexicalEnvironment environment,
+                                   boolean ownsEmitter) {
         if (input == null) {
             throw new CodeGenerationException("missing input");
         }
+        if (emitter == null || !emitter.usesInput(input)) {
+            throw new CodeGenerationException("emitter must use the accepted input");
+        }
+        if (environment == null) {
+            throw new CodeGenerationException("missing lexical environment");
+        }
         this.input = input;
-        this.emitter = new CodeEmitter(input);
+        this.emitter = emitter;
+        this.environment = environment;
+        this.ownsEmitter = ownsEmitter;
     }
 
     /**
      * Explicit ALGO entry; independent calls reset all emission state.
      */
     public final String generate(TreeNode algo) {
+        if (!ownsEmitter) {
+            throw new CodeGenerationException("cannot reset a shared emitter; emit into it directly");
+        }
         emitter.reset();
         input.requireNode(algo, "ALGO");
         input.requireNoCalls(algo);
@@ -34,6 +58,15 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
     public CodeEmitter getEmitter() {
         return emitter;
+    }
+
+    /** Validate a term through the normal translator without mutating shared output. */
+    final void validateTerm(TreeNode term) {
+        CodeEmitter validationEmitter = new CodeEmitter(input);
+        AlgorithmCodeGenerator validator =
+                new AlgorithmCodeGenerator(input, validationEmitter, environment);
+        validator.emitTerm(term, "spl_validation_sink");
+        validationEmitter.render();
     }
 
     protected final void require(TreeNode node, String production) {
@@ -114,7 +147,8 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
                     throw new CodeGenerationException(leaf, "variable must have type NUMERIC");
                 }
 
-                emitter.emitStatement(resultVariable + " = " + symbol.getGeneratedName());
+                String storage = environment.storageFor(symbol, leaf);
+                emitter.emitStatement(resultVariable + " = " + storage);
                 return;
             }
 
@@ -381,7 +415,8 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
         String temp = emitter.newTemporary();
         emitTerm(term, temp);
-        emitter.emitStatement(symbol.getGeneratedName() + " = " + temp);
+        String storage = environment.storageFor(symbol, target);
+        emitter.emitStatement(storage + " = " + temp);
 
     }
 
