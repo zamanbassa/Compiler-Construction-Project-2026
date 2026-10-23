@@ -1,14 +1,14 @@
 package spl.codegen;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import spl.semantic.SemanticType;
 import spl.semantic.Symbol;
 import spl.semantic.SymbolKind;
 import spl.tree.TreeNode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
 
 /** Phase 3a fragment translator: algorithms, terms, instructions, conditions and loops. */
 public class AlgorithmCodeGenerator implements CodeGenerator {
@@ -477,11 +477,9 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
                             call, "void CALL cannot have a result variable");
         }
 
-        if (!inliningState.activeFunctions.add(function)){
-            throw new CodeGenerationException(
-                            call, "recursive CALL chain is not inlinable");
-        }
-
+        // The function is marked active only after its actual arguments are bound:
+        // actuals belong to the caller, so f(f(1)) is nested, not recursive.
+        boolean markedActive = false;
         try{
 
             FunctionInstance instance = new FunctionInstance(function, environment, inliningState.names);
@@ -514,6 +512,12 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
             new CallArgumentBinder().bind(call, inliningState.catalogue, instance, this);
 
+            if (!inliningState.activeFunctions.add(function)){
+                throw new CodeGenerationException(
+                            call, "recursive CALL chain is not inlinable");
+            }
+            markedActive = true;
+
             AlgorithmCodeGenerator calleeGenerator = new AlgorithmCodeGenerator(
                 input, emitter, instance.getEnvironment(), false, inliningState
             );
@@ -526,7 +530,9 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
             }
         }
         finally{
-            inliningState.activeFunctions.remove(function);
+            if (markedActive){
+                inliningState.activeFunctions.remove(function);
+            }
         }
     }
 
