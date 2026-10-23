@@ -1,0 +1,34 @@
+input/test-zero.spl
+  h_293a8616118f65 1
+src/main/java/spl/Main.java
+  s_d234548a17862b::t_53d77384416b07 195-196,200-202
+  s_d234548a17862b::t_eb99431bb8d051 7,9-10,13-16,99,156-194,197-199,203-209,221-231
+  s_d234548a17862b::t_9035a5c81ff7b9 98,100-101
+  s_d234548a17862b::t_547367bc4223e0 210-220
+  h_293a8616118f65 102,232
+input/test-one.spl
+  h_293a8616118f65 1
+input/test-multiple.spl
+  h_293a8616118f65 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5ec70d41963c53ab8e487670923c00387c625aab",
+  "prompts": {},
+  "humans": {
+    "h_293a8616118f65": {
+      "author": "babychucks <babychucks05@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_d234548a17862b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "5165e740-17ce-4664-8d15-a2304f0d88f9",
+        "model": "unknown"
+      },
+      "human_author": "babychucks <babychucks05@gmail.com>"
+    }
+  }
+}
