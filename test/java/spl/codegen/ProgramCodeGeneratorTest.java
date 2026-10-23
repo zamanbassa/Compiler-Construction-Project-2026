@@ -47,10 +47,11 @@ public final class ProgramCodeGeneratorTest {
         testFunctionTemplatesAreRenderedAsComments();
         testExistingAlgorithmTranslationAndTemporaryOrdering();
         testTargetFileOutputIntegration();
+        testFunctionTemplateBodiesSupportCalls();
         testNativeCompilationAndExecution();
         testNestedFunctionTemplatesAreRenderedRecursively();
 
-        System.out.println("Phase 3b.2 program-generation tests passed.");
+        System.out.println("Phase 3b program-generation tests passed.");
     }
 
     private static void testEmptyProgramAndEpsilonDeclarations() throws Exception {
@@ -321,6 +322,26 @@ public final class ProgramCodeGeneratorTest {
         }
     }
 
+    private static void testFunctionTemplateBodiesSupportCalls() throws Exception{
+
+        CodeGenerationInput input = accepted(
+        ": "
+        + "num #twiceinc ( #n ) { "
+        + ": num #inc ( #m ) { : : return ( add ( #m 1 ) ) } "
+        + ": return ( mul ( #inc ( #n ) 2 ) ) "
+        + "} "
+        + ": print \"ready\" ; ");
+
+        String output = new ProgramCodeGenerator(input).generate();
+        int codeMineStart = output.indexOf(CODE_MINE_BEGIN);
+        int codeMineEnd = output.indexOf(CODE_MINE_END);
+        check(codeMineStart >= 0 && codeMineEnd > codeMineStart, "function templates should be generated in the code mine");
+
+        String codeMine = output.substring(codeMineStart, codeMineEnd);
+        check(codeMine.contains("spl_in_v"), "call inside a function body should emit inline-instance storage");
+        check(output.contains("std::cout << \"ready\";"), "executable main algorithm should still be generated");
+    }
+
     private static void testNativeCompilationAndExecution() throws Exception {
         String compiler = findCppCompiler();
         if (compiler == null) {
@@ -356,7 +377,71 @@ public final class ProgramCodeGeneratorTest {
                 new NativeCase(
                         "real",
                         "#r : : #r = div ( 7 2 ) ; print ( #r ) ; ",
-                        "3.5"));
+                        "3.5"),
+                
+                new NativeCase(
+                        "void-call-updates-outer-variable",
+                        "#x : void #set ( ) { : : #x = 7 ; return } "
+                        + ": #x = 0 ; #set ( ) ; print ( #x ) ; ",
+                        "7"
+                ),
+
+                new NativeCase(
+                        "numeric-call-in-arithmetic",
+                        "#x : num #inc ( #n ) { : : return ( add ( #n 1 ) ) } "
+                        + ": #x = mul ( #inc ( 4 ) 2 ) ; print ( #x ) ; ",
+                        "10"
+                ),
+
+                new NativeCase(
+                        "nested-call-in-argument-and-return",
+                        "#x : "
+                        + "num #combine ( #n ) { "
+                        + ": num #inc ( #m ) { : : return ( add ( #m 1 ) ) } "
+                        + "num #twice ( #m ) { : : return ( mul ( #m 2 ) ) } "
+                        + ": return ( add ( #twice ( #inc ( #n ) ) 1 ) ) "
+                        + "} "
+                        + ": #x = #combine ( 3 ) ; print ( #x ) ; ",
+                        "9"
+                ),
+
+                new NativeCase(
+                        "numeric-call-in-print",
+                        ": num #inc ( #n ) { : : return ( add ( #n 1 ) ) } "
+                        + ": print ( #inc ( 4 ) ) ; ",
+                        "5"
+                ),
+
+                new NativeCase(
+                        "numeric-call-in-bool",
+                        ": num #score ( #n ) { : : return ( add ( #n 2 ) ) } "
+                        + ": if larger ( #score ( 2 ) 3 ) then { print \"yes\" ; } " + 
+                        "else { print \"no\" ; } ; ",
+                        "yes"
+                ),
+
+                new NativeCase(
+                        "repeated-numeric-calls-and-continuation",
+                        "#count #first #second : " +
+                        "num #next ( ) { " + 
+                        ": : #count = add ( #count 1 ) ; return ( #count ) " + 
+                        "} " +
+                        ": #count = 0 ; " + 
+                        "#first = #next ( ) ; print \"a\" ; " +
+                        "#second = #next ( ) ; print \"b\" ; " + 
+                        "print ( #first ) ; print ( #second ) ; print ( #count ) ; " + 
+                        "print \"!\" ; ",
+                        "ab122!"
+                ),
+
+                new NativeCase(
+                        "void-call-output-and-continuation",
+                        ": void #say ( ) { : : print \"v\" ; return } "
+                        + ": #say ( ) ; print \"!\" ; #say ( ) ; print \"?\" ; ",
+                        "v!v?"
+                )
+                
+                );
 
         Path directory = Files.createTempDirectory("spl-program-native-");
         try {

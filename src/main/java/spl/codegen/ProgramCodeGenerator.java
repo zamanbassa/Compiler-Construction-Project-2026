@@ -59,8 +59,7 @@ public final class ProgramCodeGenerator {
                 new FunctionTemplateRenderer(input).renderCodeMine();
         String variableDeclarationTranslation =
                 generateVariableDeclarations(variableDeclarations);
-        String algorithmTranslation =
-                new AlgorithmCodeGenerator(input).generate(algorithm);
+        String algorithmTranslation = AlgorithmCodeGenerator.generateInlineProgram(input, algorithm);
 
         StringBuilder output = new StringBuilder();
         output.append(FunctionTemplateRenderer.serializeOuterComment(
