@@ -1,0 +1,1 @@
+#first #second : void #calculate ( #x #y ) { : : print ( #x ) ; print ( #y ) ; return } : #first = 10 ; #second = 20 ; #calculate ( add ( #first 5 ) mul ( #second 2 ) ) ;

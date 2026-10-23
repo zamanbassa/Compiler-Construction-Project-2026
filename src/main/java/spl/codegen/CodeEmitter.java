@@ -5,23 +5,47 @@ import spl.semantic.NumericMode;
 
 /** One function/fragment emission session. Declarations are hoisted before all body jumps. */
 public final class CodeEmitter {
+    private final CodeGenerationInput input;
     private final NumericMode mode;
     private final Set<String> reserved;
     private final Set<String> used = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
     private final Set<String> defined = new HashSet<>();
     private final Set<String> referenced = new HashSet<>();
+    private final LinkedHashSet<String> declaredVariables = new LinkedHashSet<>();
     private final LinkedHashSet<String> temporaries = new LinkedHashSet<>();
     private final StringBuilder body = new StringBuilder();
     private int temporaryCounter, labelCounter;
     public CodeEmitter(CodeGenerationInput input) {
         if (input == null) throw new CodeGenerationException("missing input");
+        this.input = input;
         mode = input.getNumericMode(); reserved = new HashSet<>(input.getReservedNames()); reset();
     }
     /** Begin an independent run; previous generated names must not be reused afterward. */
     public void reset() {
         used.clear(); used.addAll(reserved); labels.clear(); defined.clear(); referenced.clear();
-        temporaries.clear(); body.setLength(0); temporaryCounter = 0; labelCounter = 0;
+        declaredVariables.clear(); temporaries.clear(); body.setLength(0);
+        temporaryCounter = 0; labelCounter = 0;
+    }
+    /** Register inline storage for typed declarations in the rendered fragment. */
+    public void declareVariables(Collection<String> names) {
+        if (names == null) throw new CodeGenerationException("missing declared variable names");
+        Set<String> pending = new LinkedHashSet<>();
+        for (String name : names) {
+            if (name == null || !name.matches("[A-Za-z_][A-Za-z0-9_]*"))
+                throw new CodeGenerationException("invalid declared target identifier");
+            if (declaredVariables.contains(name)) continue;
+            if (used.contains(name) || !pending.add(name))
+                throw new CodeGenerationException(
+                        "duplicate, reserved, or already allocated declared target name: " + name);
+        }
+        for (String name : pending) {
+            used.add(name);
+            declaredVariables.add(name);
+        }
+    }
+    boolean usesInput(CodeGenerationInput candidate) {
+        return input == candidate;
     }
     public String newTemporary() {
         String name;
@@ -75,6 +99,7 @@ public final class CodeEmitter {
     public String render() {
         if (!defined.containsAll(referenced)) throw new CodeGenerationException("undefined jump target");
         StringBuilder output = new StringBuilder();
+        for (String name : declaredVariables) output.append(mode.getTargetType()).append(' ').append(name).append(";\n");
         for (String name : temporaries) output.append(mode.getTargetType()).append(' ').append(name).append(";\n");
         return output.append(body).toString();
     }
