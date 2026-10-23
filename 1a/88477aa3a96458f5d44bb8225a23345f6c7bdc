@@ -1,0 +1,37 @@
+src/main/java/spl/codegen/CodeEmitter.java
+  s_d234548a17862b::t_ae2c33a33e8091 8,15,21,27-32,34-48,102
+  s_d234548a17862b::t_4532cf53539d36 33
+test/java/spl/codegen/CallArgumentBindingTest.java
+  s_d234548a17862b::t_7081fbf7c4b6d6 1-19,21-25,27,29-84,125-140,171-180,182-207,209,211-217,219-221,223-235,241-247,252-258,261-269,271,273-274,276,278,285,287-290,293-298,310-404
+  s_d234548a17862b::t_399f5a2db51858 20,218,222,236-240,248,250-251,259-260,270,275,277,279-280,282-284,286,291-292,299-301,303-309
+  s_d234548a17862b::t_e5a0baef17141b 28,141-170
+  s_d234548a17862b::t_78cde5ceb97477 181
+  s_d234548a17862b::t_4532cf53539d36 208,210,272
+  s_d234548a17862b::t_a5cda1f210d4a5 249,281,302
+  s_d234548a17862b::t_f72fbdcfed69f4 26,85-124
+src/main/java/spl/codegen/AlgorithmCodeGenerator.java
+  s_d234548a17862b::t_ae2c33a33e8091 15-16,19-29,33-38,40-42,49-51,63-71,150-151,418-419
+src/main/java/spl/codegen/CallArgumentBinder.java
+  s_d234548a17862b::t_ae2c33a33e8091 1-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a88477aa3a96458f5d44bb8225a23345f6c7bdc",
+  "prompts": {},
+  "humans": {
+    "h_293a8616118f65": {
+      "author": "babychucks <babychucks05@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_d234548a17862b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "5165e740-17ce-4664-8d15-a2304f0d88f9",
+        "model": "unknown"
+      },
+      "human_author": "babychucks <babychucks05@gmail.com>"
+    }
+  }
+}
