@@ -114,6 +114,24 @@ public final class Phase3aEndToEndTest {
             cli(dir,1,"source and XML output paths must be different",aliasedSource,aliasedSource);
             check(Files.readString(aliasedSource).equals(aliasedContents),
                     "XML-only source/XML alias rejection preserves the source");
+            Path realOutputDir=dir.resolve("real-output");
+            Path linkedOutputDir=dir.resolve("linked-output");
+            Path aliasedXml=realOutputDir.resolve("tree.xml");
+            Path aliasedTarget=linkedOutputDir.resolve("tree.xml");
+            boolean symlinksAvailable=true;
+            try {
+                Files.createDirectories(realOutputDir);
+                Files.createSymbolicLink(linkedOutputDir,realOutputDir);
+            } catch (UnsupportedOperationException | java.io.IOException unavailable) {
+                symlinksAvailable=false;
+                System.out.println("SKIP symlinked output-alias test: symbolic links unavailable: "
+                        + unavailable.getMessage());
+            }
+            if (symlinksAvailable) {
+                cli(dir,1,"paths must be different",source,aliasedXml,aliasedTarget);
+                check(!Files.exists(aliasedXml)&&!Files.exists(aliasedTarget),
+                        "XML/target alias through symlinked parents is rejected before either output is written");
+            }
             cli(dir,0,"Compilation Successful",source,xml,target);
             check(Files.readString(target,StandardCharsets.UTF_8).contains("std::cout"),"UTF8 custom target");
             DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xml.toFile());

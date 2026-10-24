@@ -3,6 +3,8 @@ package spl.codegen;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import spl.tree.TreeNode;
 
 /** One explicitly requested target output. Reject aliases and invalidate stale artifacts first. */
@@ -25,8 +27,34 @@ public final class TargetFileOutput {
     }
 
     private static boolean same(Path a, Path b) throws IOException {
-        if (a.toAbsolutePath().normalize().equals(b.toAbsolutePath().normalize())) return true;
-        return Files.exists(a) && Files.exists(b) && Files.isSameFile(a, b);
+        return canonicalPath(a).equals(canonicalPath(b))
+                || (Files.exists(a) && Files.exists(b) && Files.isSameFile(a, b));
+    }
+
+    private static Path canonicalPath(Path path) throws IOException {
+        Path absolute = path.toAbsolutePath().normalize();
+        if (Files.exists(absolute)) {
+            return absolute.toRealPath();
+        }
+
+        Deque<Path> missingParts = new ArrayDeque<>();
+        Path existing = absolute;
+        while (existing != null && !Files.exists(existing)) {
+            Path name = existing.getFileName();
+            if (name != null) {
+                missingParts.addFirst(name);
+            }
+            existing = existing.getParent();
+        }
+        if (existing == null) {
+            return absolute;
+        }
+
+        Path canonical = existing.toRealPath();
+        for (Path part : missingParts) {
+            canonical = canonical.resolve(part);
+        }
+        return canonical.normalize();
     }
     public static TreeNode mainAlgorithm(CodeGenerationInput input) {
         TreeNode program = input.getTree();
