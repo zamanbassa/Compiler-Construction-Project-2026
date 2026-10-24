@@ -167,7 +167,7 @@ public class DeclarationResolver {
         // Variables retain nearest-declaration ancestor lookup.
         Symbol symbol = (expectedKind == SymbolKind.FUNCTION
                 ? symbolTable.lookupLocal(sourceName)
-                : symbolTable.resolve(sourceName)).orElseThrow(
+                : nearestVariable(sourceName)).orElseThrow(
                 () -> new NameResolutionException(sourceName, expectedKind));
 
         if (symbol.getKind() != expectedKind) {
@@ -176,6 +176,16 @@ public class DeclarationResolver {
         }
 
         usageNode.setResolvedSymbol(symbol);
+    }
+
+    private java.util.Optional<Symbol> nearestVariable(String sourceName) {
+        for (Scope scope = symbolTable.getCurrentScope(); scope != null; scope = scope.getParent()) {
+            java.util.Optional<Symbol> symbol = scope.lookupLocal(sourceName);
+            if (symbol.isPresent() && symbol.get().getKind() == SymbolKind.VARIABLE) {
+                return symbol;
+            }
+        }
+        return symbolTable.resolve(sourceName);
     }
 
     private boolean isUserDefinedName(TreeNode node) {
