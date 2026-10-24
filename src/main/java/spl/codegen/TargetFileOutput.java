@@ -10,12 +10,20 @@ public final class TargetFileOutput {
     private final Path target;
     public TargetFileOutput(Path source, Path xml, Path target) throws IOException {
         this.target = target.toAbsolutePath().normalize();
-        if (same(source, xml) || same(source, target) || same(xml, target))
+        validateSourceAndXmlPaths(source, xml);
+        if (same(source, this.target) || same(xml, this.target))
             throw new CodeGenerationException("source, XML and target paths must be different");
         // A failed compilation must not leave a previous fragment looking current.
         if (Files.isDirectory(this.target)) throw new IOException("target output is a directory: " + target);
         Files.deleteIfExists(this.target);
     }
+
+    public static void validateSourceAndXmlPaths(Path source, Path xml) throws IOException {
+        if (same(source, xml)) {
+            throw new CodeGenerationException("source and XML output paths must be different");
+        }
+    }
+
     private static boolean same(Path a, Path b) throws IOException {
         if (a.toAbsolutePath().normalize().equals(b.toAbsolutePath().normalize())) return true;
         return Files.exists(a) && Files.exists(b) && Files.isSameFile(a, b);

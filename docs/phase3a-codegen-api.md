@@ -32,6 +32,10 @@ CLI arguments, `Main` retains XML-only behavior. The third optional path request
 complete C++ translation unit, including function templates in the non-executable code
 mine, source-variable declarations, expanded calls, and the `main` wrapper.
 
+The input and XML output paths are checked for aliases in every CLI mode, including
+XML-only mode. When C++ output is requested, its path must also differ from both input
+and XML paths.
+
 The requested target path is checked against source and XML paths (including existing
 filesystem aliases). A previous target file is invalidated before compilation begins,
 so failed lexing/parsing/semantic analysis/generation cannot leave stale generated source

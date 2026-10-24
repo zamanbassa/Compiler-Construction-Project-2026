@@ -108,6 +108,12 @@ public final class Phase3aEndToEndTest {
         try {
             Path source=dir.resolve("source.spl"), xml=dir.resolve("tree.xml"), target=dir.resolve("nested/out.cpp");
             Files.writeString(source,"#x : : #x = 2 ; print ( #x ) ; ");
+            Path aliasedSource=dir.resolve("aliased.spl");
+            String aliasedContents="#preserve : : #preserve = 9 ; ";
+            Files.writeString(aliasedSource,aliasedContents);
+            cli(dir,1,"source and XML output paths must be different",aliasedSource,aliasedSource);
+            check(Files.readString(aliasedSource).equals(aliasedContents),
+                    "XML-only source/XML alias rejection preserves the source");
             cli(dir,0,"Compilation Successful",source,xml,target);
             check(Files.readString(target,StandardCharsets.UTF_8).contains("std::cout"),"UTF8 custom target");
             DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xml.toFile());

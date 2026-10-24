@@ -35,6 +35,8 @@ public class Main {
 
             String inputPath = args.length > 0 ? args[0] : "input/sample.spl";
             String outputPath = args.length > 1 ? args[1] : "output/tree.xml";
+            TargetFileOutput.validateSourceAndXmlPaths(
+                    Paths.get(inputPath), Paths.get(outputPath));
             TargetFileOutput target = args.length > 2
                     ? new TargetFileOutput(Paths.get(inputPath), Paths.get(outputPath), Paths.get(args[2])) : null;
             String sourceCode = Files.readString(Paths.get(inputPath));
