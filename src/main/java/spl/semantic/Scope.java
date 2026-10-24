@@ -1,17 +1,12 @@
 package spl.semantic;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import spl.tree.TreeNode;
 
@@ -51,60 +46,12 @@ public final class Scope {
         return ownerNode;
     }
 
-    /** Returns declarations made directly in this scope, containing all variable and function symbols. */
-    public Map<String, Symbol> getDeclarations() {
-        return new AbstractMap<>() {
-            @Override
-            public int size() {
-                return variables.size() + functions.size();
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return variables.isEmpty() && functions.isEmpty();
-            }
-
-            @Override
-            public boolean containsKey(Object key) {
-                return variables.containsKey(key) || functions.containsKey(key);
-            }
-
-            @Override
-            public Symbol get(Object key) {
-                Symbol s = variables.get(key);
-                return s != null ? s : functions.get(key);
-            }
-
-            @Override
-            public Collection<Symbol> values() {
-                List<Symbol> all = new ArrayList<>(variables.size() + functions.size());
-                all.addAll(variables.values());
-                all.addAll(functions.values());
-                return Collections.unmodifiableList(all);
-            }
-
-            @Override
-            public Set<Entry<String, Symbol>> entrySet() {
-                List<Entry<String, Symbol>> entries = new ArrayList<>(size());
-                for (Symbol s : variables.values()) {
-                    entries.add(new SimpleImmutableEntry<>(s.getOriginalName(), s));
-                }
-                for (Symbol s : functions.values()) {
-                    entries.add(new SimpleImmutableEntry<>(s.getOriginalName(), s));
-                }
-                return new AbstractSet<>() {
-                    @Override
-                    public Iterator<Entry<String, Symbol>> iterator() {
-                        return Collections.unmodifiableList(entries).iterator();
-                    }
-
-                    @Override
-                    public int size() {
-                        return entries.size();
-                    }
-                };
-            }
-        };
+    /** Returns all declarations made directly in this scope. */
+    public List<Symbol> getDeclarations() {
+        List<Symbol> all = new ArrayList<>(variables.size() + functions.size());
+        all.addAll(variables.values());
+        all.addAll(functions.values());
+        return Collections.unmodifiableList(all);
     }
 
     /** Looks up a declaration in this scope only (searching variables first, then functions). */

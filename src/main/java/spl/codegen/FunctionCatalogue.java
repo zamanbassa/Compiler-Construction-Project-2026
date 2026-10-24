@@ -62,7 +62,7 @@ public final class FunctionCatalogue {
             if (symbol == null || symbol.getKind() != SymbolKind.FUNCTION
                     || symbol.getDeclarationNode() != name || scope == null
                     || scope.getParent() != symbol.getDeclaringScope()
-                    || symbol.getDeclaringScope().getDeclarations().values().stream().noneMatch(s -> s == symbol))
+                    || !symbol.getDeclaringScope().getDeclarations().contains(symbol))
                 throw new CodeGenerationException(name, "invalid resolved function declaration/scope");
             TreeNode body = required(declaration, "P");
             String kind = children.get(0).getValue();

@@ -31,6 +31,7 @@ public class DeclarationResolverTest {
         rejectsParentCallingChildFunction();
         rejectsRecursiveFunctionCalls();
         registersSiblingFunctionsBeforeBodies();
+        allowsVariableAndFunctionSharingName();
 
         System.out.println("Declaration resolver tests passed.");
     }
@@ -333,5 +334,8 @@ public class DeclarationResolverTest {
         assert var.getKind() == SymbolKind.VARIABLE;
         assert func.getKind() == SymbolKind.FUNCTION;
         assert !var.getGeneratedName().equals(func.getGeneratedName());
+        assert table.getRootScope().getDeclarations().size() == 2;
+        assert table.getRootScope().getDeclarations().contains(var);
+        assert table.getRootScope().getDeclarations().contains(func);
     }
 }

@@ -59,7 +59,7 @@ public final class Phase3aEndToEndTest {
             fragments.add(fragment);
             StringBuilder wrapper=new StringBuilder("void case_"+wrappers.size()+"() {\n");
             // Source-variable declarations are deliberately test-only (production deferred to 3b).
-            for(Symbol symbol:input.getSymbolTable().getRootScope().getDeclarations().values())
+            for(Symbol symbol:input.getSymbolTable().getRootScope().getDeclarations())
                 if(symbol.getKind()==SymbolKind.VARIABLE) wrapper.append(input.getNumericMode().getTargetType()).append(' ').append(symbol.getGeneratedName()).append(" = 0;\n");
             wrappers.add(wrapper.append(fragment).append("}\n").toString());
         }

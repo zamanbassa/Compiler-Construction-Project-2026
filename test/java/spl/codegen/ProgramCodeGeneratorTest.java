@@ -515,7 +515,7 @@ public final class ProgramCodeGeneratorTest {
     private static List<Symbol> rootVariables(CodeGenerationInput input) {
         List<Symbol> variables = new ArrayList<>();
         for (Symbol symbol : input.getSymbolTable()
-                .getRootScope().getDeclarations().values()) {
+                .getRootScope().getDeclarations()) {
             if (symbol.getKind() == SymbolKind.VARIABLE) {
                 variables.add(symbol);
             }
