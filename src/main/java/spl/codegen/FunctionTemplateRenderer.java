@@ -189,17 +189,18 @@ public final class FunctionTemplateRenderer{
             output.append(renderTemplate(nested));
         }
 
-        AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input);
-        generator.emitAlgo(function.getAlgorithm());
-        if (numeric){
-            generator.emitTerm(function.getReturnTerm().orElseThrow(), template.returnSlot);
-        }
+        // AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input);
+        // generator.emitAlgo(function.getAlgorithm());
+        // if (numeric){
+        //     generator.emitTerm(function.getReturnTerm().orElseThrow(), template.returnSlot);
+        // }
 
-        String bodyCode = generator.getEmitter().render().replace("\r\n", "\n").replace('\r','\n')
+        String bodyCode = AlgorithmCodeGenerator.generateFunctionTemplateBody(input, function, template.returnSlot);
+        String normalizedBodyCode = bodyCode.replace("\r\n", "\n").replace('\r','\n')
         .replace("\n", LINE_END);
-        output.append(bodyCode);
+        output.append(normalizedBodyCode);
 
-        if (!bodyCode.endsWith(LINE_END)){
+        if (!normalizedBodyCode.endsWith(LINE_END)){
             output.append(LINE_END);
         }
 

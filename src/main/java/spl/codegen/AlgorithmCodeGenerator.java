@@ -1,11 +1,14 @@
 package spl.codegen;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import spl.semantic.SemanticType;
 import spl.semantic.Symbol;
 import spl.semantic.SymbolKind;
 import spl.tree.TreeNode;
-import java.util.ArrayList;
 
 /** Phase 3a fragment translator: algorithms, terms, instructions, conditions and loops. */
 public class AlgorithmCodeGenerator implements CodeGenerator {
@@ -14,19 +17,20 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
     protected final CodeEmitter emitter;
     private final InliningContract.LexicalEnvironment environment;
     private final boolean ownsEmitter;
+    private final InliningState inliningState;
 
     public AlgorithmCodeGenerator(CodeGenerationInput input) {
-        this(input, new CodeEmitter(input), new RootEnvironment(), true);
+        this(input, new CodeEmitter(input), new RootEnvironment(), true, null);
     }
 
     AlgorithmCodeGenerator(CodeGenerationInput input, CodeEmitter emitter,
                            InliningContract.LexicalEnvironment environment) {
-        this(input, emitter, environment, false);
+        this(input, emitter, environment, false, null);
     }
 
     private AlgorithmCodeGenerator(CodeGenerationInput input, CodeEmitter emitter,
                                    InliningContract.LexicalEnvironment environment,
-                                   boolean ownsEmitter) {
+                                   boolean ownsEmitter, InliningState inliningState) {
         if (input == null) {
             throw new CodeGenerationException("missing input");
         }
@@ -40,6 +44,7 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
         this.emitter = emitter;
         this.environment = environment;
         this.ownsEmitter = ownsEmitter;
+        this.inliningState = inliningState;
     }
 
     /**
@@ -64,14 +69,16 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
     final void validateTerm(TreeNode term) {
         CodeEmitter validationEmitter = new CodeEmitter(input);
         AlgorithmCodeGenerator validator =
-                new AlgorithmCodeGenerator(input, validationEmitter, environment);
+                new AlgorithmCodeGenerator(input, validationEmitter, environment, false, inliningState);
         validator.emitTerm(term, "spl_validation_sink");
         validationEmitter.render();
     }
 
     protected final void require(TreeNode node, String production) {
         input.requireNode(node, production);
-        input.requireNoCalls(node);
+        if (inliningState == null){
+            input.requireNoCalls(node);
+        }
     }
 
     private void unsupported(TreeNode node, String production) {
@@ -126,10 +133,13 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
             if (!leaf.isTerminal()) {
                 if ("CALL".equals(leaf.getValue())) {
-                    throw new CodeGenerationException(
+                    if (inliningState == null){
+                        throw new CodeGenerationException(
                             leaf, "CALL translation is deferred to Phase 3b");
+                    }
                 }
-                throw new CodeGenerationException(term, "malformed TERM leaf");
+                emitCall(leaf, resultVariable, true);
+                return;
             }
 
             String value = leaf.getValue();
@@ -420,9 +430,122 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
     }
 
+    private void emitCall(TreeNode call, String resultVariable, boolean numericResultRequired){
+
+        if (inliningState == null){
+            throw new CodeGenerationException(
+                            call, "CALL inlining is available only for full programs");
+        }
+
+        input.requireNode(call, "CALL");
+        if (call.getChildren().size() != 4){
+            throw new CodeGenerationException(
+                            call, "malformed CALL production");
+        }
+
+        TreeNode calleeName = call.getChildren().get(0);
+        Symbol calleeSymbol = calleeName.getResolvedSymbol();
+        if (calleeSymbol == null){
+            throw new CodeGenerationException(
+                            calleeName, "CALL has no resolved function symbol");
+        }
+
+        FunctionCatalogue.Function function = inliningState.catalogue.requireFunction(calleeSymbol, calleeName);
+
+        boolean functionReturnsNumber = function.getReturnTerm().isPresent();
+        SemanticType expectedCallType = functionReturnsNumber ? 
+        SemanticType.NUMERIC : SemanticType.PROCEDURE;
+
+        if (numericResultRequired != functionReturnsNumber || 
+            function.getSymbol().getType() != expectedCallType ||
+            call.getType() != expectedCallType ||
+            calleeName.getType() != expectedCallType
+        ){
+            throw new CodeGenerationException(
+                            call, "CALL kind does not match its function template");
+        }
+
+        if (numericResultRequired && (resultVariable == null ||
+            !resultVariable.matches("[A-Za-z_][A-Za-z0-9_]*")
+        )){
+            throw new CodeGenerationException(
+                            call, "numeric CALL requires a valid result variable");
+        }
+
+        if (!numericResultRequired && resultVariable != null){
+            throw new CodeGenerationException(
+                            call, "void CALL cannot have a result variable");
+        }
+
+        // The function is marked active only after its actual arguments are bound:
+        // actuals belong to the caller, so f(f(1)) is nested, not recursive.
+        boolean markedActive = false;
+        try{
+
+            FunctionInstance instance = new FunctionInstance(function, environment, inliningState.names);
+            List<String> instanceStorage = new ArrayList<>();
+            for (Symbol parameter : function.getParameters()){
+                instanceStorage.add(instance.getEnvironment().storageFor(parameter, call));
+            }
+
+            for (Symbol local : function.getLocals()){
+                instanceStorage.add(instance.getEnvironment().storageFor(local, call));
+            }
+
+            String resultSlot = instance.getResult().getValueSlot().orElse(null);
+
+            if (functionReturnsNumber && resultSlot == null){
+                throw new CodeGenerationException(
+                            call, "numeric function has no result slot");
+            }
+
+            if (!functionReturnsNumber && resultSlot != null){
+                throw new CodeGenerationException(
+                            call, "void function instance unexpectedly has a result slot");
+            }
+
+            if (resultSlot != null){
+                instanceStorage.add(resultSlot);
+            }
+
+            emitter.declareVariables(instanceStorage);
+
+            new CallArgumentBinder().bind(call, inliningState.catalogue, instance, this);
+
+            if (!inliningState.activeFunctions.add(function)){
+                throw new CodeGenerationException(
+                            call, "recursive CALL chain is not inlinable");
+            }
+            markedActive = true;
+
+            AlgorithmCodeGenerator calleeGenerator = new AlgorithmCodeGenerator(
+                input, emitter, instance.getEnvironment(), false, inliningState
+            );
+
+            calleeGenerator.emitAlgo(function.getAlgorithm());
+
+            if (functionReturnsNumber){
+                calleeGenerator.emitTerm(function.getReturnTerm().orElseThrow(), resultSlot);
+                emitter.emitStatement(resultVariable + " = " + resultSlot);
+            }
+        }
+        finally{
+            if (markedActive){
+                inliningState.activeFunctions.remove(function);
+            }
+        }
+    }
+
     protected void emitSimpleInstruction(TreeNode instruction){
 
         require(instruction, "INSTR");
+
+        TreeNode call = child(instruction, "CALL");
+
+        if (call != null){
+            emitCall(call, null, false);
+            return;
+        }
 
         TreeNode outp = child(instruction, "OUTP");
 
@@ -600,5 +723,69 @@ public class AlgorithmCodeGenerator implements CodeGenerator {
 
     private boolean isBoolNode(TreeNode node) {
         return node != null && !node.isTerminal() && "BOOL".equals(node.getValue());
+    }
+
+    static String generateInlineProgram(
+        CodeGenerationInput input, TreeNode algorithm
+    ){
+        input.requireNode(algorithm, "ALGO");
+        CodeEmitter emitter = new CodeEmitter(input);
+        InliningState state = new InliningState(input);
+        AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input, emitter, 
+            new RootEnvironment(), true, state
+        );
+        generator.emitAlgo(algorithm);
+        return emitter.render();
+    }
+
+    //builds display body for 1 function call
+    static String generateFunctionTemplateBody(CodeGenerationInput input, FunctionCatalogue.Function function, 
+        String resultSlot
+    ){
+
+        if (input == null || function == null){
+            throw new CodeGenerationException("function-template body requires input and function");
+        }
+
+        if (function.getReturnTerm().isPresent() && resultSlot == null){
+            throw new CodeGenerationException(function.getDeclaration(), "numeric function template is missing its return slot");
+        }
+
+        CodeEmitter emitter = new CodeEmitter(input);
+        InliningState state = new InliningState(input);
+
+        if (!state.activeFunctions.add(function)){
+            throw new CodeGenerationException(function.getDeclaration(), "recursive call chain is not inlinable");
+        }
+
+        try{
+            AlgorithmCodeGenerator generator = new AlgorithmCodeGenerator(input, emitter,
+                new RootEnvironment(), false, state
+            );
+
+            generator.emitAlgo(function.getAlgorithm());
+
+            if (function.getReturnTerm().isPresent()){
+                generator.emitTerm(function.getReturnTerm().orElseThrow(), resultSlot);
+            }
+
+            return emitter.render();
+        }
+        finally{
+            state.activeFunctions.remove(function);
+        }
+    }
+
+    private static final class InliningState{
+
+        private final FunctionCatalogue catalogue;
+        private final OutputNames names;
+        private final Set<FunctionCatalogue.Function> activeFunctions = 
+        Collections.newSetFromMap(new IdentityHashMap<>());
+
+        private InliningState(CodeGenerationInput input){
+            this.catalogue = new FunctionCatalogue(input);
+            this.names = new OutputNames(input);
+        }
     }
 }
