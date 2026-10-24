@@ -21,3 +21,6 @@ output/*.xml
 some_file.txt
 
 specifications/
+
+tutor-test.cpp
+tutor-test.spl
