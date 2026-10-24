@@ -29,7 +29,8 @@ public final class SemanticDataStructureTest {
         assert functionScope.getOwnerNode() == functionNode;
         assert variable.getKind() == SymbolKind.VARIABLE;
         assert function.getKind() == SymbolKind.FUNCTION;
-        assert variable.getGeneratedName().startsWith("__variable");
+        assert variable.getGeneratedName().startsWith("spl_variable_");
+        assert !variable.getGeneratedName().contains("__");
         assert function.getGeneratedName().equals("function_main");
         assert variable.getDeclaringScope() == functionScope;
         assert variable.getDeclarationNode() != null;

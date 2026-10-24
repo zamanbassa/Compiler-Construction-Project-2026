@@ -270,10 +270,10 @@ public final class CodeGenerationFoundationTest {
                 + "int spl_tmp_2;\n"
                 + "int spl_tmp_3;\n"
                 + "spl_tmp_0 = 2;\n"
-                + "spl_tmp_2 = __variable1;\n"
+                + "spl_tmp_2 = spl_variable_1;\n"
                 + "spl_tmp_3 = 3;\n"
                 + "spl_tmp_1 = spl_tmp_2 * spl_tmp_3;\n"
-                + "__variable0 = spl_tmp_0 + spl_tmp_1;\n"),
+                + "spl_variable_0 = spl_tmp_0 + spl_tmp_1;\n"),
                 "nested term translation and resolved target names");
 
         CodeGenerationInput callInput = accepted(
@@ -281,7 +281,7 @@ public final class CodeGenerationFoundationTest {
         TreeNode callAssignment = find(callInput.getTree(), "ASSIGN");
         AlgorithmCodeGenerator callGenerator = new AlgorithmCodeGenerator(callInput);
         fails(() -> callGenerator.emitTerm(
-                find(callAssignment, "TERM"), "__variable0"), "Phase 3b");
+                find(callAssignment, "TERM"), "spl_variable_0"), "Phase 3b");
 
         fails(() -> generator.emitTerm(term, "not a target identifier"),
                 "invalid result variable");

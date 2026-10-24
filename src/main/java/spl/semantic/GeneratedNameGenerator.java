@@ -13,7 +13,7 @@ public final class GeneratedNameGenerator {
     /** Returns the next generated name for the supplied symbol kind. */
     public String generate(SymbolKind kind) {
         Objects.requireNonNull(kind, "kind");
-        String prefix = kind == SymbolKind.FUNCTION ? "__function" : "__variable";
+        String prefix = kind == SymbolKind.FUNCTION ? "__function" : "spl_variable_";
         return prefix + nextId++;
     }
 }

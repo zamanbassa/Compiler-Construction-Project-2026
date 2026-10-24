@@ -583,7 +583,7 @@ public final class ProgramCodeGeneratorTest {
 
     private static void assertUserDeclarationsUninitialized(String output) {
         Pattern declaration = Pattern.compile(
-                "(?m)^(?:int|float) __variable[0-9]+;\\r?$");
+                "(?m)^(?:int|float) spl_variable_[0-9]+;\\r?$");
         Matcher matcher = declaration.matcher(output);
         int count = 0;
         while (matcher.find()) {

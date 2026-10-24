@@ -272,7 +272,7 @@ public final class ComprehensiveSystemTest {
         Symbol variable = table.declare("#x", SymbolKind.VARIABLE, variableNode);
         Symbol function = table.declare("#f", SymbolKind.FUNCTION, "__entry", functionNode);
         assert variable.getOriginalName().equals("#x");
-        assert variable.getGeneratedName().equals("__variable0");
+        assert variable.getGeneratedName().equals("spl_variable_0");
         assert variable.getKind() == SymbolKind.VARIABLE;
         assert variable.getDeclaringScope() == root;
         assert variable.getDeclarationNode() == variableNode;
