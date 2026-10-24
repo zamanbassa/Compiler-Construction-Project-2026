@@ -5,11 +5,14 @@ import java.util.Optional;
 import spl.tree.TreeNode;
 
 public final class SymbolTable {//MAIN INTERFACE
+
     private final Scope rootScope;
     private final GeneratedNameGenerator generatedNameGenerator;
     private Scope currentScope;
 
-    /** Creates a table with an empty root scope. */
+    /**
+     * Creates a table with an empty root scope.
+     */
     public SymbolTable() {
         rootScope = new Scope(null, null);
         currentScope = rootScope;
@@ -24,20 +27,24 @@ public final class SymbolTable {//MAIN INTERFACE
         return currentScope;
     }
 
-    /** Enters an anonymous child scope. */
+    /**
+     * Enters an anonymous child scope.
+     */
     public Scope enterScope() {
         return enterScope(null);
     }
 
-    /** Enters a child scope owned by the supplied syntax-tree node. */
+    /**
+     * Enters a child scope owned by the supplied syntax-tree node.
+     */
     public Scope enterScope(TreeNode ownerNode) {
         currentScope = new Scope(currentScope, ownerNode);
         return currentScope;
     }
 
     /**
-     * Exits the current scope and returns the scope that was exited.
-     * The root scope cannot be exited.
+     * Exits the current scope and returns the scope that was exited. The root
+     * scope cannot be exited.
      */
     public Scope exitScope() {
         if (currentScope.getParent() == null) {
@@ -48,12 +55,16 @@ public final class SymbolTable {//MAIN INTERFACE
         return exited;
     }
 
-    /** Declares a symbol and generates its internal name automatically. */
+    /**
+     * Declares a symbol and generates its internal name automatically.
+     */
     public Symbol declare(String originalName, SymbolKind kind, TreeNode declarationNode) {
         return declare(originalName, kind, null, declarationNode);
     }
 
-    /** Declares a symbol, using the supplied generated name when non-null. */
+    /**
+     * Declares a symbol, using the supplied generated name when non-null.
+     */
     public Symbol declare(
             String originalName,
             SymbolKind kind,
@@ -73,16 +84,39 @@ public final class SymbolTable {//MAIN INTERFACE
         return symbol;
     }
 
-    /** Looks up a source name in the current scope only. */
+    /**
+     * Looks up a source name in the current scope only.
+     */
     public Optional<Symbol> lookupLocal(String sourceName) {
         return currentScope.lookupLocal(sourceName);
     }
 
-    /** Resolves a source name in the current scope and then its ancestors. */
+    public Optional<Symbol> lookupLocal(String sourceName, SymbolKind kind) {
+        return currentScope.lookupLocal(sourceName, kind);
+    }
+
+    /**
+     * Resolves a source name in the current scope and then its ancestors.
+     */
     public Optional<Symbol> resolve(String sourceName) {
         Objects.requireNonNull(sourceName, "sourceName");
         for (Scope scope = currentScope; scope != null; scope = scope.getParent()) {
             Optional<Symbol> symbol = scope.lookupLocal(sourceName);
+            if (symbol.isPresent()) {
+                return symbol;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Resolves a source name of the specified kind in the current scope and
+     * then its ancestors.
+     */
+    public Optional<Symbol> resolve(String sourceName, SymbolKind kind) {
+        Objects.requireNonNull(sourceName, "sourceName");
+        for (Scope scope = currentScope; scope != null; scope = scope.getParent()) {
+            Optional<Symbol> symbol = scope.lookupLocal(sourceName, kind);
             if (symbol.isPresent()) {
                 return symbol;
             }

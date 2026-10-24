@@ -25,12 +25,14 @@ import spl.tree.TreeNode;
 import spl.tree.XMLWriter;
 
 /**
- * Broad dependency-free regression test for the current Phase 1 and Phase 2a system.
+ * Broad dependency-free regression test for the current Phase 1 and Phase 2a
+ * system.
  *
- * Run from the project root with assertions enabled:
- * java -ea -cp out\\classes spl.ComprehensiveSystemTest
+ * Run from the project root with assertions enabled: java -ea -cp out\\classes
+ * spl.ComprehensiveSystemTest
  */
 public final class ComprehensiveSystemTest {
+
     private ComprehensiveSystemTest() {
     }
 
@@ -52,17 +54,16 @@ public final class ComprehensiveSystemTest {
 
     private static void testLexerRecognisesEveryKeywordAndTokenFamily() {
         String[] keywords = {
-                "void", "num", "return", "print", "nop", "comment", "if", "then", "else",
-                "mod", "add", "sub", "mul", "div", "neg", "not", "and", "or", "eq",
-                "larger", "lesser", "while", "until", "do"
+            "void", "num", "return", "print", "nop", "comment", "if", "then", "else",
+            "mod", "add", "sub", "mul", "div", "neg", "not", "and", "or", "eq",
+            "larger", "lesser", "while", "until", "do"
         };
         String input = String.join(" ", keywords)
                 + " #name1 0 -0.5 42 -42 42.11 -42.11 \"abc,.-:?!09\""
                 + " : ; ( ) { } = ";
 
         List<Token> tokens = new Lexer().tokenize(input);
-        assert tokens.size() == keywords.length + 1 + 6 + 1 + 7 + 1
-                : "unexpected token count: " + tokens.size();
+        assert tokens.size() == keywords.length + 1 + 6 + 1 + 7 + 1 : "unexpected token count: " + tokens.size();
 
         for (int i = 0; i < keywords.length; i++) {
             assertToken(tokens, i, TokenType.KEYWORD, keywords[i]);
@@ -243,7 +244,7 @@ public final class ComprehensiveSystemTest {
         Path output = directory.resolve("deep").resolve("result.xml");
         try {
             Files.writeString(input, "#x : : print \"custom-smoke\" ; #x = mul ( 6 7 ) ; ");
-            Main.main(new String[] {input.toString(), output.toString()});
+            Main.main(new String[]{input.toString(), output.toString()});
 
             assert Files.exists(output) : "Main did not create the custom output";
             Document document = parseXml(output);
@@ -312,7 +313,8 @@ public final class ComprehensiveSystemTest {
         SymbolTable table = new SymbolTable();
         table.declare("#duplicate", SymbolKind.VARIABLE, null);
         assertThrows(DuplicateDeclarationException.class,
-                () -> table.declare("#duplicate", SymbolKind.FUNCTION, null));
+                () -> table.declare("#duplicate", SymbolKind.VARIABLE, null));
+        table.declare("#duplicate", SymbolKind.FUNCTION, null);
         assertThrows(NullPointerException.class,
                 () -> table.declare("#null-kind", null, null));
         assertThrows(NullPointerException.class,
@@ -344,18 +346,15 @@ public final class ComprehensiveSystemTest {
             new Parser().parse(new Lexer().tokenize(source));
             throw new AssertionError("expected syntax error for: " + source);
         } catch (SyntaxError expected) {
-            assert expected.getMessage().contains("Syntax error")
-                    : "unexpected syntax error message: " + expected.getMessage();
+            assert expected.getMessage().contains("Syntax error") : "unexpected syntax error message: " + expected.getMessage();
         }
     }
 
     private static void assertToken(List<Token> tokens, int index, TokenType type, String lexeme) {
         Token token = tokens.get(index);
-        assert token.getType() == type
-                : "expected " + type + " at index " + index + ", got " + token;
-        assert token.getLexeme().equals(lexeme)
-                : "expected '" + lexeme + "' at index " + index + ", got '"
-                        + token.getLexeme() + "'";
+        assert token.getType() == type : "expected " + type + " at index " + index + ", got " + token;
+        assert token.getLexeme().equals(lexeme) : "expected '" + lexeme + "' at index " + index + ", got '"
+                + token.getLexeme() + "'";
     }
 
     private static void assertLexicalError(String input, String expectedMessagePart) {
@@ -363,8 +362,7 @@ public final class ComprehensiveSystemTest {
             new Lexer().tokenize(input);
             throw new AssertionError("expected lexical error for: " + input);
         } catch (LexicalException expected) {
-            assert expected.getMessage().contains(expectedMessagePart)
-                    : "unexpected lexical error: " + expected.getMessage();
+            assert expected.getMessage().contains(expectedMessagePart) : "unexpected lexical error: " + expected.getMessage();
             assert expected.getLine() > 0 : "lexical error should include a line";
             assert expected.getColumn() > 0 : "lexical error should include a column";
         }
@@ -390,8 +388,7 @@ public final class ComprehensiveSystemTest {
             action.run();
             throw new AssertionError("expected " + expectedType.getSimpleName());
         } catch (Throwable actual) {
-            assert expectedType.isInstance(actual)
-                    : "expected " + expectedType.getSimpleName() + ", got " + actual;
+            assert expectedType.isInstance(actual) : "expected " + expectedType.getSimpleName() + ", got " + actual;
         }
     }
 
@@ -400,8 +397,7 @@ public final class ComprehensiveSystemTest {
             action.run();
             throw new AssertionError("expected NullPointerException");
         } catch (NullPointerException expected) {
-            assert expected.getMessage().contains(expectedMessagePart)
-                    : "unexpected null message: " + expected.getMessage();
+            assert expected.getMessage().contains(expectedMessagePart) : "unexpected null message: " + expected.getMessage();
         }
     }
 }

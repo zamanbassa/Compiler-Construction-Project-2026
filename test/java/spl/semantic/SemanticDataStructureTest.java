@@ -2,8 +2,11 @@ package spl.semantic;
 
 import spl.tree.TreeNode;
 
-/** Dependency-free tests for the Phase 2a symbol-table API. */
+/**
+ * Dependency-free tests for the Phase 2a symbol-table API.
+ */
 public final class SemanticDataStructureTest {
+
     private SemanticDataStructureTest() {
     }
 
@@ -60,11 +63,12 @@ public final class SemanticDataStructureTest {
         SymbolTable table = new SymbolTable();
         table.declare("#duplicate", SymbolKind.VARIABLE, null);
         try {
-            table.declare("#duplicate", SymbolKind.FUNCTION, null);
+            table.declare("#duplicate", SymbolKind.VARIABLE, null); // Duplicate variable fails
             throw new AssertionError("expected duplicate declaration error");
         } catch (DuplicateDeclarationException expected) {
             assert expected.getMessage().contains("#duplicate");
         }
+        table.declare("#duplicate", SymbolKind.FUNCTION, null);
 
         try {
             table.exitScope();
