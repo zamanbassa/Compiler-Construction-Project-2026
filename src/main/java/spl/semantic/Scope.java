@@ -16,7 +16,8 @@ public final class Scope {
     private final int scopeId;
     private final Scope parent;
     private final List<Scope> childScopes = new ArrayList<>();
-    private final Map<String, Symbol> declarations = new LinkedHashMap<>();
+    private final Map<String, Symbol> variables = new LinkedHashMap<>();
+    private final Map<String, Symbol> functions = new LinkedHashMap<>();
     private final TreeNode ownerNode;
 
     /** Creates a scope and automatically attaches it to its parent. */
@@ -45,26 +46,42 @@ public final class Scope {
         return ownerNode;
     }
 
-    /** Returns declarations made directly in this scope, keyed by source name. */
-    public Map<String, Symbol> getDeclarations() {
-        return Collections.unmodifiableMap(declarations);
+    /** Returns all declarations made directly in this scope. */
+    public List<Symbol> getDeclarations() {
+        List<Symbol> all = new ArrayList<>(variables.size() + functions.size());
+        all.addAll(variables.values());
+        all.addAll(functions.values());
+        return Collections.unmodifiableList(all);
     }
 
-    /** Looks up a declaration in this scope only. */
+    /** Looks up a declaration in this scope only (searching variables first, then functions). */
     public Optional<Symbol> lookupLocal(String sourceName) {
         Objects.requireNonNull(sourceName, "sourceName");
-        return Optional.ofNullable(declarations.get(sourceName));
+        Symbol symbol = variables.get(sourceName);
+        if (symbol != null) {
+            return Optional.of(symbol);
+        }
+        return Optional.ofNullable(functions.get(sourceName));
     }
 
-    /** Adds a declaration, rejecting duplicate source names in this scope. */
+    /** Looks up a declaration of the specified kind in this scope only. */
+    public Optional<Symbol> lookupLocal(String sourceName, SymbolKind kind) {
+        Objects.requireNonNull(sourceName, "sourceName");
+        Objects.requireNonNull(kind, "kind");
+        Map<String, Symbol> target = kind == SymbolKind.FUNCTION ? functions : variables;
+        return Optional.ofNullable(target.get(sourceName));
+    }
+
+    /** Adds a declaration, rejecting duplicate source names of the same kind in this scope. */
     public void declare(Symbol symbol) {
         Objects.requireNonNull(symbol, "symbol");
         if (symbol.getDeclaringScope() != this) {
             throw new IllegalArgumentException("symbol belongs to a different declaring scope");
         }
-        if (declarations.containsKey(symbol.getOriginalName())) {
+        Map<String, Symbol> target = symbol.getKind() == SymbolKind.FUNCTION ? functions : variables;
+        if (target.containsKey(symbol.getOriginalName())) {
             throw new DuplicateDeclarationException(symbol.getOriginalName(), this);
         }
-        declarations.put(symbol.getOriginalName(), symbol);
+        target.put(symbol.getOriginalName(), symbol);
     }
 }

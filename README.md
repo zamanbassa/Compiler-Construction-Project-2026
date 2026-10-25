@@ -153,13 +153,44 @@ first colon; the loop example also initializes its counter.
 
 Issues 3a.1 and 3a.2 provide numeric-mode handoff, validated input, shared translator
 interfaces and a deterministic typed emitter. See [the API guide](docs/phase3a-codegen-api.md)
-for team extension points, scope, examples and test commands. The instruction translators and optional target-file integration are now implemented.
-Zero to two CLI arguments retain XML-only behavior; a third path requests a target fragment.
+for API details, supported grammar, numeric policy and verification commands. The
+instruction translators, complete-program generator and optional target-file output are
+implemented.
 
-## Phase 3a integration and verification
+## Phase 3 program generation and CLI
 
-Generate a fragment alongside XML: `java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml output/algorithm.cpp`.
-Run `java -ea -cp out/classes spl.codegen.Phase3aEndToEndTest` after compiling production and test sources.
-See [the Phase 3a guide](docs/phase3a-codegen-api.md) for safety, supported grammar, numeric policy,
-full-suite commands, native compiler setup and explicit skip semantics. Target files are fragments,
-not complete programs; declarations/functions/inlining/full wrappers remain Phase 3b.
+`Main` preserves the existing XML-only invocations. A third positional path opts into
+generation of a **complete C++ translation unit**:
+
+```text
+java -cp out/classes spl.Main [input-file] [output-xml-file] [output-cpp-file]
+```
+
+For example:
+
+```text
+java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml output/program.cpp
+```
+
+With zero arguments, the compiler uses `input/sample.spl` and `output/tree.xml`. With one
+or two arguments, it writes XML only. With three arguments, it writes the XML and the
+complete C++ source, including the non-executable function code mine and the executable
+program wrapper. Source, XML, and C++ output paths must be distinct. Target directories
+are created as needed, and target output is written through a temporary file.
+
+The CLI emits C++ source; it does **not** invoke a native compiler. To build and run the
+generated source, use an installed C++ compiler, for example:
+
+```text
+g++ -std=c++11 output/program.cpp -o output/program
+./output/program
+```
+
+Phase 3a fragment generation remains available through the Java code-generation API for
+callers that specifically need an algorithm fragment. It is not the output mode selected
+by the third CLI path. See [the API guide](docs/phase3a-codegen-api.md) for details.
+
+After compiling production and test sources, the full-program CLI regression test can be
+run with `java -ea -cp out/classes spl.codegen.Phase3aEndToEndTest`. It includes a native
+compile/run smoke test when `CXX`, `g++`, or `clang++` is available; if no compiler is
+available, native execution is reported as skipped, not passed.

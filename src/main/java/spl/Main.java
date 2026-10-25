@@ -4,16 +4,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import spl.codegen.AlgorithmCodeGenerator;
-import spl.codegen.CallArgumentBinder;
 import spl.codegen.CodeGenerationException;
 import spl.codegen.CodeGenerationInput;
-import spl.codegen.FunctionCatalogue;
-import spl.codegen.FunctionInstance;
-import spl.codegen.OutputNames;
-import spl.codegen.RootEnvironment;
 import spl.codegen.TargetFileOutput;
 import spl.lexer.Lexer;
 import spl.lexer.LexicalException;
@@ -42,6 +35,8 @@ public class Main {
 
             String inputPath = args.length > 0 ? args[0] : "input/sample.spl";
             String outputPath = args.length > 1 ? args[1] : "output/tree.xml";
+            TargetFileOutput.validateSourceAndXmlPaths(
+                    Paths.get(inputPath), Paths.get(outputPath));
             TargetFileOutput target = args.length > 2
                     ? new TargetFileOutput(Paths.get(inputPath), Paths.get(outputPath), Paths.get(args[2])) : null;
             String sourceCode = Files.readString(Paths.get(inputPath));
@@ -95,11 +90,6 @@ public class Main {
 
             System.out.println();
 
-            if (Boolean.getBoolean("spl.debug.3b4")) {
-                debugArgumentBinding(checked);
-                System.out.println();
-            }
-
             System.out.println("=== XML Output ===");
             TreeBuilder treeBuilder = new TreeBuilder();
             treeBuilder.setRoot(resolvedTree);
@@ -150,83 +140,6 @@ public class Main {
             System.err.println(e.getMessage());
             e.printStackTrace();
             System.exit(2);
-        }
-    }
-
-    private static void debugArgumentBinding(Phase2bResult checked) {
-        CodeGenerationInput input = new CodeGenerationInput(checked);
-        FunctionCatalogue catalogue = new FunctionCatalogue(input);
-        OutputNames names = new OutputNames(input);
-        CallArgumentBinder binder = new CallArgumentBinder();
-        RootEnvironment rootEnvironment = new RootEnvironment();
-        List<TreeNode> calls = new ArrayList<>();
-
-        TreeNode program = input.getTree();
-        if ("SPL_PROG".equals(program.getValue())) {
-            if (program.getChildren().size() != 1) {
-                throw new CodeGenerationException(program, "SPL_PROG must contain one P");
-            }
-            program = program.getChildren().get(0);
-        }
-        input.requireNode(program, "P");
-        TreeNode algorithm = null;
-        for (TreeNode child : program.getChildren()) {
-            if ("ALGO".equals(child.getValue())) {
-                algorithm = child;
-                break;
-            }
-        }
-        if (algorithm == null) {
-            throw new CodeGenerationException(program, "P is missing ALGO");
-        }
-        collectTopLevelCalls(algorithm, calls);
-
-        System.out.println("=== Phase 3b.4 Argument-Binding Debug (top-level calls only) ===");
-        if (calls.isEmpty()) {
-            System.out.println("No top-level CALL nodes found in the program ALGO.");
-        }
-        for (TreeNode call : calls) {
-            TreeNode calleeName = call.getChildren().get(0);
-            try {
-                FunctionCatalogue.Function function =
-                        catalogue.requireFunction(calleeName.getResolvedSymbol(), calleeName);
-                FunctionInstance instance =
-                        new FunctionInstance(function, rootEnvironment, names);
-                AlgorithmCodeGenerator caller = new AlgorithmCodeGenerator(input);
-                binder.bind(call, catalogue, instance, caller);
-                System.out.println("Argument binding succeeded for "
-                        + function.getSymbol().getGeneratedName()
-                        + " at CALL node " + call.getNodeId() + ".");
-                System.out.println("=== BEGIN ARGUMENT-BINDING C++ FRAGMENT ===");
-                System.out.print(caller.getEmitter().render());
-                System.out.println("=== END ARGUMENT-BINDING C++ FRAGMENT ===");
-            } catch (CodeGenerationException failure) {
-                System.err.println("Argument binding failed at CALL node "
-                        + call.getNodeId() + ": " + failure.getMessage());
-            }
-        }
-        System.out.println("Nested function caller environments are not tested by this "
-                + "Main-level debug path; it uses RootEnvironment only.");
-        List<TreeNode> nestedCalls = new ArrayList<>();
-        for (TreeNode child : program.getChildren()) {
-            if ("F_DECL".equals(child.getValue())) {
-                collectTopLevelCalls(child, nestedCalls);
-            }
-        }
-        for (TreeNode call : nestedCalls) {
-            System.out.println("Skipped nested-function CALL node " + call.getNodeId()
-                    + ": Main cannot construct the package-private caller generator "
-                    + "with that function's lexical environment.");
-        }
-    }
-
-    private static void collectTopLevelCalls(TreeNode node, List<TreeNode> calls) {
-        if ("CALL".equals(node.getValue())) {
-            calls.add(node);
-            return;
-        }
-        for (TreeNode child : node.getChildren()) {
-            collectTopLevelCalls(child, calls);
         }
     }
 

@@ -157,7 +157,7 @@ public final class LoopCodeGenerationTest {
     }
 
     static String firstVarName(CodeGenerationInput input) {
-        for (Symbol s : input.getSymbolTable().getRootScope().getDeclarations().values()) {
+        for (Symbol s : input.getSymbolTable().getRootScope().getDeclarations()) {
             if (s.getKind() == SymbolKind.VARIABLE) {
                 return s.getGeneratedName();
             }
@@ -166,11 +166,10 @@ public final class LoopCodeGenerationTest {
     }
 
     static String varNamed(CodeGenerationInput input, String source) {
-        Symbol s = input.getSymbolTable().getRootScope().getDeclarations().get(source);
-        if (s == null) {
-            throw new AssertionError("no var " + source);
-        }
-        return s.getGeneratedName();
+        return input.getSymbolTable().getRootScope()
+                .lookupLocal(source, SymbolKind.VARIABLE)
+                .orElseThrow(() -> new AssertionError("no var " + source))
+                .getGeneratedName();
     }
 
     static void nativeRun(List<String> functions, String expected) throws Exception {
