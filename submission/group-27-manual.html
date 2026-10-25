@@ -50,6 +50,9 @@
   <p>Successful execution reports the completed analysis phases and output paths. A lexical, syntax, semantic, type-analysis, or code-generation error is printed to the error stream and the program exits with a non-zero status.</p>
   <p>The SPL lexer requires a blank separator after each token. Spaces, carriage returns, and line feeds are accepted as separators. The dollar sign is not part of an input file; it is only the parser end-of-input notation used in the specification.</p>
 
+  <h2>Variable and Function Names</h2>
+  <p>A variable and a function may share the same SPL name. The compiler distinguishes their uses by the syntax-tree context: a name in a function-call node followed by parameter parentheses resolves to the function, while a name used as an assignment target or value resolves to the variable. Each use is bound to its corresponding symbol, so a program can, for example, assign to <code>#a</code> and call <code>#a ( )</code> without confusing the two.</p>
+
   <h2>Example</h2>
   <p>For an input file containing <code>: : print "hello" ;</code> followed by a newline, run:</p>
   <pre>java -jar group-27.jar example.spl example-tree.xml example.cpp</pre>
