@@ -36,7 +36,7 @@ public final class CodeGenerationInput {
         validate(tree);
     }
     private void collect(Scope scope) {
-        for (Symbol symbol : scope.getDeclarations().values()) {
+        for (Symbol symbol : scope.getDeclarations()) {
             declarations.add(symbol);
             if (!symbol.getGeneratedName().matches("[A-Za-z_][A-Za-z0-9_]*"))
                 throw new CodeGenerationException(symbol.getDeclarationNode(), "invalid generated target identifier");

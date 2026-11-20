@@ -6,6 +6,7 @@ import java.util.Objects;
 import spl.tree.TreeNode;
 
 public class DeclarationResolver {
+
     private SymbolTable symbolTable;
 
     public SymbolTable resolve(TreeNode root) {
@@ -23,7 +24,7 @@ public class DeclarationResolver {
         return new Phase2aResult(root, symbolTable);
     }
 
-     private TreeNode unwrapProgram(TreeNode root) {
+    private TreeNode unwrapProgram(TreeNode root) {
         if ("SPL_PROG".equals(root.getValue())) {
             if (root.getChildren().size() != 1) {
                 throw new IllegalArgumentException(
@@ -58,7 +59,7 @@ public class DeclarationResolver {
         resolveAlgorithm(algorithm);
     }
 
-     private void declareVariables(TreeNode variableDeclarations) {
+    private void declareVariables(TreeNode variableDeclarations) {
         if (variableDeclarations == null) {
             return;
         }
@@ -71,7 +72,7 @@ public class DeclarationResolver {
 
             TreeNode nameNode = current.getChildren().get(0);
 
-            Symbol symbol= symbolTable.declare(
+            Symbol symbol = symbolTable.declare(
                     nameNode.getValue(),
                     SymbolKind.VARIABLE,
                     nameNode);
@@ -166,16 +167,24 @@ public class DeclarationResolver {
         // Functions are visible only in this program's immediate F_DECL.
         // Variables retain nearest-declaration ancestor lookup.
         Symbol symbol = (expectedKind == SymbolKind.FUNCTION
-                ? symbolTable.lookupLocal(sourceName)
-                : symbolTable.resolve(sourceName)).orElseThrow(
+                ? symbolTable.lookupLocal(sourceName, SymbolKind.FUNCTION)
+                : nearestVariable(sourceName)).orElseThrow(
                 () -> new NameResolutionException(sourceName, expectedKind));
-
         if (symbol.getKind() != expectedKind) {
             throw new NameResolutionException(
                     sourceName, expectedKind, symbol.getKind());
         }
-
         usageNode.setResolvedSymbol(symbol);
+    }
+
+    private java.util.Optional<Symbol> nearestVariable(String sourceName) {
+        for (Scope scope = symbolTable.getCurrentScope(); scope != null; scope = scope.getParent()) {
+            java.util.Optional<Symbol> symbol = scope.lookupLocal(sourceName, SymbolKind.VARIABLE);
+            if (symbol.isPresent()) {
+                return symbol;
+            }
+        }
+        return symbolTable.resolve(sourceName, SymbolKind.VARIABLE);
     }
 
     private boolean isUserDefinedName(TreeNode node) {
@@ -250,7 +259,7 @@ public class DeclarationResolver {
         if (!expected.equals(node.getValue())) {
             throw new IllegalArgumentException(
                     "Expected " + expected + " node but found "
-                            + node.getValue());
+                    + node.getValue());
         }
     }
 

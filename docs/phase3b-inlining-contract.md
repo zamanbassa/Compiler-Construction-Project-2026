@@ -47,13 +47,11 @@ and actual counts with node context. This is a backend safety policy, not a newl
 Phase 2b specification rule; call expansion must invoke it before emission.
 
 ## Unresolved tutor/lecture clarifications
-1. Sheet p.3 says pN captures an actual and aN is a formal but prints pN=aN. Executable
-   semantics proposed above use aN=pN. This direction is NOT verbatim compliance with that
-   printed line; confirm the apparent reversal with the tutor/lecture before final sign-off.
-2. Left-to-right evaluation and per-expansion storage are explicit team design policies;
-   the sheet does not fully prescribe these details. Confirm if lecture conventions differ.
-3. Prose says C, but green #include <iostream> and std::cout require C++. Use C++ pending
-   contrary tutor instructions; do not claim it is valid ISO C.
+1. On p.3, the sheet identifies pN as the captured actual and aN as the formal, but prints
+   `pN = aN`. Our implementation uses `aN = pN` so the actual argument is passed into the
+   formal. Ask whether the printed assignment is a typo and confirm that `aN = pN` is
+   intended.
+
 
 ## Commands
 Compile production and tests as usual, then:

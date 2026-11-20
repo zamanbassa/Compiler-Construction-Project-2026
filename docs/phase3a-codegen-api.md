@@ -1,4 +1,4 @@
-# Phase 3a: algorithm fragment generation
+# Phase 3 code generation APIs
 
 ## Run and build (PowerShell from repository root)
 
@@ -10,8 +10,8 @@ javac -d out/classes $sources
 # Existing XML-only interface remains supported:
 java -cp out/classes spl.Main
 java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml
-# Third optional positional argument opts into target fragment generation:
-java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml output/algorithm.cpp
+# Third optional positional argument opts into complete C++ translation-unit generation:
+java -cp out/classes spl.Main input/arithmetic.spl output/tree.xml output/program.cpp
 java -ea -cp out/classes spl.codegen.Phase3aEndToEndTest
 ```
 
@@ -26,16 +26,19 @@ Get-ChildItem test/java -Recurse -Filter *Test.java | ForEach-Object {
 }
 ```
 
-## Output contract / safety
-XML is still written in its existing format after successful Phase 2b. The optional
-third path receives only the selected top-level P's immediate ALGO translation,
-not algorithms inside function declarations. Successful unused function declarations
-are allowed, but a CALL reached within the selected ALGO (including nested branches,
-loops or terms) is rejected explicitly as deferred to Phase 3b.
+## CLI output contract / safety
+XML is written in its existing format after successful Phase 2b. With zero, one, or two
+CLI arguments, `Main` retains XML-only behavior. The third optional path requests a
+complete C++ translation unit, including function templates in the non-executable code
+mine, source-variable declarations, expanded calls, and the `main` wrapper.
+
+The input and XML output paths are checked for aliases in every CLI mode, including
+XML-only mode. When C++ output is requested, its path must also differ from both input
+and XML paths.
 
 The requested target path is checked against source and XML paths (including existing
 filesystem aliases). A previous target file is invalidated before compilation begins,
-so failed lexing/parsing/semantic analysis/generation cannot leave a stale fragment
+so failed lexing/parsing/semantic analysis/generation cannot leave stale generated source
 looking successful. Output directories are created on successful generation, and a
 UTF-8 temporary sibling is moved into place atomically where supported (replace fallback
 otherwise). Do not point the target argument at a valuable unrelated file: it is an
@@ -45,19 +48,25 @@ Source/XML/target aliases are rejected without deleting their contents.
 Expected frontend/semantic/code-generation/file failures produce a phase-specific message
 and exit 1; unexpected internal errors exit 2. The success banner is emitted only after
 all requested outputs succeed. A valid XML tree may remain if later target generation
-fails; XML success is not a claim of target-code success.
+fails; XML success is not a claim of target-code success. The CLI emits source code but
+does not automatically invoke a native compiler.
+
+The third CLI path is not a fragment mode. Callers that need only the selected top-level
+`P`'s immediate `ALGO` translation can use the Java fragment API below. That API excludes
+function bodies and rejects a call reached in the selected algorithm.
 
 ## Supported/deferred grammar
-Supported: empty ALGO (/* end */), ordered INSTR ; ALGO traversal, numeric/name terms,
+The Phase 3a fragment API supports: empty ALGO (/* end */), ordered INSTR ; ALGO traversal, numeric/name terms,
 add/sub/mul/div/mod/neg, string and numeric print, assignment, nop, comment,
 eq/larger/lesser, short-circuit and/or/not, if/then/else translated using gotos,
 and pre/post-test while/until. Nested algorithm bodies dispatch through the same generator.
 No target else/while/do or logical composition operators implement SPL control flow.
 
-Deferred: production source-variable declarations, functions, function calls/inlining,
-program wrapper/includes/main and a standalone executable. The .cpp artifact is a
-FRAGMENT, not a complete compilable program. The test wrapper uses C++ because the
-spec's green output examples use std::cout despite describing a C-inspired target.
+The full-program generator additionally supports production source-variable declarations,
+functions, and function-call inlining. Its `.cpp` output is a complete translation unit.
+The fragment API remains useful for testing or embedding the Phase 3a algorithm translator;
+its fragment is not a standalone executable. Generated output uses C++ because the output
+uses `std::cout`, despite the specification's C-inspired terminology.
 
 ## Phase 2b handoff and numeric policy
 
@@ -95,20 +104,26 @@ reading them. emitStatement expects no terminator and adds semicolon plus newlin
 emitLabel emits label: ; so an ending label is valid; emitComment safely formats comments.
 Jump methods require allocated labels; render rejects undefined targets. reset starts an
 independent deterministic run. Rejected conditional statements do not register references.
-All translators share one emitter per fragment. Production source declarations stay deferred.
+All translators share one emitter per fragment. Source declarations and function expansion
+are outside the fragment API and are handled by the full-program generator.
 
 ## Verification and native compiler setup
-Phase3aEndToEndTest uses the production generator with no translator overrides. It covers
+`Phase3aEndToEndTest` covers the fragment translator and the full-program CLI path. It uses
+the production generator with no translator overrides and covers
 each grammar family, integer/real modes, comparison and nested Boolean truth tables,
 short-circuit cases with unsafe skipped operands, all four loops with zero/one/multiple
-iterations, nested flow, determinism, label/temporary structure, and CLI file/error behavior.
-Existing frontend/semantic and individual-translator tests remain part of the full suite.
+iterations, nested flow, determinism, label/temporary structure, CLI file/error behavior,
+and native compilation/execution of a CLI-generated full program. Inlining and call behavior
+are also covered by `InlineCallExecutionTest` and `InlineCallRegressionTest`. Existing
+frontend/semantic and individual-translator tests remain part of the full suite.
 
-Native tests wrap fragments with test-only source-variable declarations and a C++ main,
-compare stdout with explicit expected outcomes, and apply process timeouts. The wrapper
-is NOT production Phase 3b implementation. Files are created in temporary directories.
-With no compiler available, Java/static/CLI checks run but native behavior is explicitly
-reported SKIP, never as passed. Native behavior remains unverified until those tests run.
+Fragment native tests wrap fragments with test-only source-variable declarations and a C++
+`main`; this wrapper is only for testing the fragment API. Full-program native tests compile
+and execute the source produced by the CLI, without a test-only wrapper. Tests compare
+stdout with explicit expected outcomes and apply process timeouts. Temporary test files are
+removed. With no compiler available, Java/static/CLI checks still run, but native behavior
+is explicitly reported SKIP, never as passed; native behavior remains unverified until a
+compiler-enabled test run succeeds.
 Set CXX to a single compiler executable (not a command with flags), or put g++/clang++
 on PATH. For example, if installed:
 
@@ -117,5 +132,6 @@ $env:CXX = 'C:/msys64/ucrt64/bin/g++.exe'
 java -ea -cp out/classes spl.codegen.Phase3aEndToEndTest
 ```
 
-Look for PASS native Phase 3a execution. A started compiler that rejects the generated
-code is a test failure, not a skip. No compiler installation is performed automatically.
+Look for PASS native Phase 3a execution and PASS CLI-generated full-program compile/run.
+A started compiler that rejects generated code is a test failure, not a skip. No compiler
+installation is performed automatically.

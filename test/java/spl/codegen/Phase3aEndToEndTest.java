@@ -59,7 +59,7 @@ public final class Phase3aEndToEndTest {
             fragments.add(fragment);
             StringBuilder wrapper=new StringBuilder("void case_"+wrappers.size()+"() {\n");
             // Source-variable declarations are deliberately test-only (production deferred to 3b).
-            for(Symbol symbol:input.getSymbolTable().getRootScope().getDeclarations().values())
+            for(Symbol symbol:input.getSymbolTable().getRootScope().getDeclarations())
                 if(symbol.getKind()==SymbolKind.VARIABLE) wrapper.append(input.getNumericMode().getTargetType()).append(' ').append(symbol.getGeneratedName()).append(" = 0;\n");
             wrappers.add(wrapper.append(fragment).append("}\n").toString());
         }
@@ -67,6 +67,7 @@ public final class Phase3aEndToEndTest {
         String simple=fragments.get(1);
         check(simple.indexOf("/* nop */")<simple.indexOf("/* \"note\" */"),"instruction order");
         check(count(simple,"std::cout <<")==3,"print once each");
+        fragmentApiStillRejectsCalls();
         cliTests();
         nativeRun(cases,wrappers);
         System.out.println("Phase 3a end-to-end Java checks passed: "+cases.size()+" production-translator cases and CLI regressions.");
@@ -90,11 +91,47 @@ public final class Phase3aEndToEndTest {
         check(!code.contains("; "),"newline after semicolon");
     }
     static int count(String text,String needle){int n=0,pos=0;while((pos=text.indexOf(needle,pos))>=0){n++;pos+=needle.length();}return n;}
+    static void fragmentApiStillRejectsCalls()throws Exception {
+        CodeGenerationInput input=accepted(
+                ": num #inc ( #n ) { : : return ( add ( #n 1 ) ) } "
+                + ": print ( #inc ( 4 ) ) ; ");
+        try {
+            new AlgorithmCodeGenerator(input).generate(TargetFileOutput.mainAlgorithm(input));
+            throw new AssertionError("standalone Phase 3a fragment API should reject calls");
+        } catch (CodeGenerationException expected) {
+            check(expected.getMessage().contains("CALL translation is deferred"),
+                    "fragment-only mode reports that calls require full-program generation");
+        }
+    }
     static void cliTests()throws Exception {
         Path dir=Files.createTempDirectory("spl-phase3-cli-");
         try {
             Path source=dir.resolve("source.spl"), xml=dir.resolve("tree.xml"), target=dir.resolve("nested/out.cpp");
             Files.writeString(source,"#x : : #x = 2 ; print ( #x ) ; ");
+            Path aliasedSource=dir.resolve("aliased.spl");
+            String aliasedContents="#preserve : : #preserve = 9 ; ";
+            Files.writeString(aliasedSource,aliasedContents);
+            cli(dir,1,"source and XML output paths must be different",aliasedSource,aliasedSource);
+            check(Files.readString(aliasedSource).equals(aliasedContents),
+                    "XML-only source/XML alias rejection preserves the source");
+            Path realOutputDir=dir.resolve("real-output");
+            Path linkedOutputDir=dir.resolve("linked-output");
+            Path aliasedXml=realOutputDir.resolve("tree.xml");
+            Path aliasedTarget=linkedOutputDir.resolve("tree.xml");
+            boolean symlinksAvailable=true;
+            try {
+                Files.createDirectories(realOutputDir);
+                Files.createSymbolicLink(linkedOutputDir,realOutputDir);
+            } catch (UnsupportedOperationException | java.io.IOException unavailable) {
+                symlinksAvailable=false;
+                System.out.println("SKIP symlinked output-alias test: symbolic links unavailable: "
+                        + unavailable.getMessage());
+            }
+            if (symlinksAvailable) {
+                cli(dir,1,"paths must be different",source,aliasedXml,aliasedTarget);
+                check(!Files.exists(aliasedXml)&&!Files.exists(aliasedTarget),
+                        "XML/target alias through symlinked parents is rejected before either output is written");
+            }
             cli(dir,0,"Compilation Successful",source,xml,target);
             check(Files.readString(target,StandardCharsets.UTF_8).contains("std::cout"),"UTF8 custom target");
             DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xml.toFile());
@@ -103,11 +140,42 @@ public final class Phase3aEndToEndTest {
             check(Files.readString(xml).equals(xmlWithTarget),"XML unchanged with target option");
             String bytes=Files.readString(target);
             cli(dir,0,"Compilation Successful",source,xml,target);check(bytes.equals(Files.readString(target)),"file determinism");
-            String[] bad={"@ ",": : print ; ",": : #x = 1 ; ",": void #f ( ) { : : return } : print ( #f ( ) ) ; ","#x : : #x = mod ( 4 2 ) ; #x = div ( 4 2 ) ; ",": void #f ( ) { : : return } : #f ( ) ; ",": num #f ( ) { : : return ( 1 ) } : print ( #f ( ) ) ; "};
-            String[] phase={"Lexical Analysis","Syntax Analysis","Declaration Resolution","Type Checking","Type Checking","Code Generation","Code Generation"};
+            Files.writeString(source,
+                    "#x : num #inc ( #n ) { : : return ( add ( #n 1 ) ) } "
+                    + ": #x = #inc ( 4 ) ; print ( #x ) ; ");
+            cli(dir,0,"Compilation Successful",source,xml,target);
+            String functionProgram=Files.readString(target,StandardCharsets.UTF_8);
+            check(functionProgram.contains("/* begin of the non-executable code-mine for later inlining")
+                            && functionProgram.contains("end of the non-executable code-mine */"),
+                    "function-bearing CLI output includes the non-executable code mine");
+            check(count(functionProgram,"#include <iostream>")==1
+                            && count(functionProgram,"int main() {")==1
+                            && count(functionProgram,"return 0;")==1
+                            && functionProgram.contains("/* begin of executable C code */")
+                            && functionProgram.contains("/* end of executable C */"),
+                    "function-bearing CLI output is a complete translation unit");
+            DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xml.toFile());
+            compileAndRunGeneratedProgram(target,dir,"5");
+
+            String[] bad={"@ ",": : print ; ",": : #x = 1 ; ",": void #f ( ) { : : return } : print ( #f ( ) ) ; ","#x : : #x = mod ( 4 2 ) ; #x = div ( 4 2 ) ; "};
+            String[] phase={"Lexical Analysis","Syntax Analysis","Declaration Resolution","Type Checking","Type Checking"};
             for(int i=0;i<bad.length;i++){
                 Files.writeString(source,bad[i]);Files.writeString(target,"stale target");
                 cli(dir,1,phase[i],source,xml,target);check(!Files.exists(target),"stale target removed on rejection");
+            }
+            String[] wrongArgumentCounts={
+                    ": void #f ( #p ) { : : return } : #f ( ) ; ",
+                    ": void #f ( ) { : : return } : #f ( 1 ) ; "
+            };
+            String[] argumentCountDetails={"expected 1, got 0","expected 0, got 1"};
+            for(int i=0;i<wrongArgumentCounts.length;i++){
+                Files.writeString(source,wrongArgumentCounts[i]);Files.writeString(target,"stale target");
+                cli(dir,1,"Code Generation",source,xml,target);
+                String output=Files.readString(dir.resolve("cli.log"));
+                check(output.contains("argument count mismatch")
+                                && output.contains(argumentCountDetails[i]),
+                        "argument-count code-generation diagnostic: "+output);
+                check(!Files.exists(target),"stale target removed on argument-count rejection");
             }
             Files.writeString(source,": : ");
             cli(dir,0,"Compilation Successful",source,xml); // original two-argument XML mode
@@ -123,6 +191,34 @@ public final class Phase3aEndToEndTest {
             Files.createDirectories(dir.resolve("input"));Files.writeString(dir.resolve("input/sample.spl"),": : ");
             cli(dir,0,"Compilation Successful");check(Files.exists(dir.resolve("output/tree.xml")),"default XML behavior");
         } finally { cleanup(dir); }
+    }
+    static void compileAndRunGeneratedProgram(Path target,Path directory,String expected)throws Exception {
+        List<String> compilers=new ArrayList<>();
+        if(System.getenv("CXX")!=null)compilers.add(System.getenv("CXX"));
+        compilers.add("g++");
+        compilers.add("clang++");
+        Path executable=directory.resolve("generated-program");
+        Path log=directory.resolve("generated-program.log");
+        for(String compiler:compilers) {
+            Process build;
+            try {
+                build=new ProcessBuilder(compiler,"-std=c++11",target.toString(),"-o",executable.toString())
+                        .redirectErrorStream(true).redirectOutput(log.toFile()).start();
+            } catch(java.io.IOException unavailable) {
+                continue;
+            }
+            waitFor(build);
+            check(build.exitValue()==0,"CLI-generated full program failed to compile: "+Files.readString(log));
+            Process run=new ProcessBuilder(executable.toString())
+                    .redirectErrorStream(true).redirectOutput(log.toFile()).start();
+            waitFor(run);
+            String actual=Files.readString(log);
+            check(run.exitValue()==0&&actual.equals(expected),
+                    "CLI-generated full program output mismatch: "+actual+" expected "+expected);
+            System.out.println("PASS CLI-generated full-program compile/run with "+compiler);
+            return;
+        }
+        System.out.println("SKIP CLI-generated full-program native run: no CXX/g++/clang++ compiler available.");
     }
     static void cli(Path dir,int exit,String message,Path...args)throws Exception {
         String cp=Arrays.stream(System.getProperty("java.class.path").split(Pattern.quote(System.getProperty("path.separator"))))
